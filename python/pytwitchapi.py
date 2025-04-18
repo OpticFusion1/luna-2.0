@@ -4,7 +4,7 @@ from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.chat import Chat, EventData, ChatMessage, ChatCommand
 from twitchAPI.helper import first
 from twitchAPI.eventsub.websocket import EventSubWebsocket
-from twitchAPI.object.eventsub import ChannelSubscribeEvent, ChannelSubscriptionGiftData, ChannelSubscriptionMessageEvent, ChannelCheerEvent
+from twitchAPI.object.eventsub import ChannelSubscribeEvent, ChannelSubscriptionGiftData, ChannelSubscriptionMessageEvent, ChannelCheerEvent, ChannelPointsCustomRewardRedemptionAddEvent
 import asyncio
 from uuid import UUID
 import os
@@ -44,6 +44,7 @@ TARGET_CHANNEL = 'smokie_777'
 WHISPER_PREFIX_TEXT = '[respond to this message as if you were whispering. give a longer response than usual.]'
 RANT_PREFIX_TEXT = '[please go on a really long and angry rant about the following topic.]'
 
+### START CHAT API ###
 
 async def chat_on_ready(ready_event: EventData):
   print('[PYTWITCHAPI] chat module connected')
@@ -214,10 +215,18 @@ async def chat_on_command_ban(cmd: ChatCommand):
     if username_to_ban:
       send_ban_user_via_username_event_to_priority_queue(username_to_ban, None, reason)
 
+### END CHAT API ###
+
+### START GENERIC PYTWITCHAPI ###
+
 async def terminate_pytwitchapi():
   InstanceContainer.chat.stop()
   # InstanceContainer.pubsub.stop()
   await InstanceContainer.twitch.close()
+
+### END GENERIC PYTWITCHAPI ###
+
+### START EVENTSUB API ###
 
 async def eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt):
   InstanceContainer.ws.send(json.dumps({
@@ -234,40 +243,44 @@ async def eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_messa
 
 # handles first time, non-gifted subs
 async def eventsub_handle_listen_channel_subscribe(data: ChannelSubscribeEvent):
-  print('[PYTWITCHAPI]', data.event)
-  if not data.event.is_gift: # gift subs are handled separately in eventsub_handle_listen_channel_subscription_gift()
-    tier = f'Tier {int(data.event.tier) // 1000}'
-    ws_sub_name = data.event.user_name
+  event = data.event
+  print('[PYTWITCHAPI]', { 'tier': event.tier, 'user_name': event.user_name, 'is_gift': event.is_gift })
+  if not event.is_gift: # gift subs are handled separately in eventsub_handle_listen_channel_subscription_gift()
+    tier = f'Tier {int(event.tier) // 1000}'
+    ws_sub_name = event.user_name
     ws_message = f'{tier} sub'
     prompt = f'{ws_sub_name} just subscribed at {tier}!'
     eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
 
 # handles gifted subs
 async def eventsub_handle_listen_channel_subscription_gift(data: ChannelSubscriptionGiftData):
-  print('[PYTWITCHAPI]', data.event)
-  tier = f'Tier {int(data.event.tier) // 1000}'
-  ws_sub_name = data.event.user_name or 'An anonymous gifter'
+  event = data.event
+  print('[PYTWITCHAPI]', { 'tier': event.tier, 'user_name': event.user_name, 'is_gift': event.is_gift })
+  tier = f'Tier {int(event.tier) // 1000}'
+  ws_sub_name = event.user_name or 'An anonymous gifter'
   ws_message = f'{tier} sub'
   prompt = f'{ws_sub_name} just subscribed at {tier}!'
   eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
 
 # handles resubs only.
 async def eventsub_handle_listen_channel_subscription_message(data: ChannelSubscriptionMessageEvent):
-  print('[PYTWITCHAPI]', data.event)
-  tier = f'Tier {int(data.event.tier) // 1000}'
-  months = f' for {data.event.cumulative_months} months' if data.event.cumulative_months else ''
-  sub_message = f' Their sub message: {data.event.message.text}' if data.event.message.text else ''
-  ws_sub_name = data.event.user_name or 'An anonymous gifter'
+  event = data.event
+  print('[PYTWITCHAPI]', { 'tier': event.tier, 'user_name': event.user_name, 'is_gift': event.is_gift, 'cumulative_months': event.cumulative_months, 'message.text': event.message.text })
+  tier = f'Tier {int(event.tier) // 1000}'
+  months = f' for {event.cumulative_months} months' if event.cumulative_months else ''
+  sub_message = f' Their sub message: {event.message.text}' if event.message.text else ''
+  ws_sub_name = event.user_name or 'An anonymous gifter'
   ws_message = f'{tier} sub'
   prompt = f'{ws_sub_name} just resubscribed at {tier}{months}!{sub_message}'
   eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
 
 # handles bits.
-async def eventsub_handle_listen_channel_cheer(data: ChannelCheerEvent): 
-  print('[PYTWITCHAPI]', data.event)
-  user_name = data.event.user_name or 'An anonymous donator'
-  bits = data.event.bits
-  message = f' Their message: {data.event.message}'
+async def eventsub_handle_listen_channel_cheer(data: ChannelCheerEvent):
+  event = data.event
+  print('[PYTWITCHAPI]', { 'bits': event.bits, 'user_name': event.user_name, 'message': event.message })
+  user_name = event.user_name or 'An anonymous donator'
+  bits = event.bits
+  message = f' Their message: {event.message}'
   prompt = f'{user_name} just cheered {bits} bits!{message}'
   InstanceContainer.ws.send(json.dumps({
     'twitch_event': {
@@ -278,8 +291,82 @@ async def eventsub_handle_listen_channel_cheer(data: ChannelCheerEvent):
   }))
   InstanceContainer.priority_queue.enqueue(
     prompt=prompt, 
-    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_PUBSUB_EVENTS_QUEUE']
+    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE']
   )
+
+async def eventsub_handle_listen_channel_points_custom_reward_redemption_add(data: ChannelPointsCustomRewardRedemptionAddEvent):
+  event = data.event
+  title = event.reward.title
+  display_name = event.user_name
+  user_input = event.user_input
+  print('[PYTWITCHAPI]', { 'reward.title': title, 'user_name': display_name, 'user_input': user_input })
+
+  if title == 'luna whisper' and State.is_twitch_chat_react_on:
+    vts_set_expression(VTS_EXPRESSIONS['FLUSHED'])
+    prompt = f'{WHISPER_PREFIX_TEXT} {display_name}: {user_input}'
+    with InstanceContainer.app.app_context():
+      db_event_insert_one(
+        type=TWITCH_EVENT_TYPE['CHANNEL_POINT_REDEMPTION'],
+        event='luna whisper',
+        body=user_input
+      )
+    InstanceContainer.priority_queue.enqueue(
+      prompt=prompt,
+      priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE'],
+      azure_speaking_style=AZURE_SPEAKING_STYLE['WHISPERING']
+    )
+  elif title == 'luna rant' and State.is_twitch_chat_react_on:
+    vts_set_expression(VTS_EXPRESSIONS['ANGRY'])
+    prompt = f'{RANT_PREFIX_TEXT} {user_input}!'
+    with InstanceContainer.app.app_context():
+      db_event_insert_one(
+        type=TWITCH_EVENT_TYPE['CHANNEL_POINT_REDEMPTION'],
+        event='luna rant',
+        body=user_input
+      )
+    InstanceContainer.priority_queue.enqueue(
+      prompt=prompt,
+      priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE']
+    )
+  elif title == 'Luna brown hair':
+    with InstanceContainer.app.app_context():
+      db_event_insert_one(
+        type=TWITCH_EVENT_TYPE['CHANNEL_POINT_REDEMPTION'],
+        event='Luna brown hair'
+      )
+    vts_set_expression(VTS_EXPRESSIONS['BROWN_HAIR'])
+  elif title == 'smokie tts' and not State.is_singing:
+    with InstanceContainer.app.app_context():
+      db_event_insert_one(
+        type=TWITCH_EVENT_TYPE['CHANNEL_POINT_REDEMPTION'],
+        event='smokie tts',
+        body=user_input
+      )
+    InstanceContainer.priority_queue.enqueue(
+      prompt=user_input,
+      priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE'],
+      is_eleven_labs=True
+    )
+  elif title == 'unlock 7tv emote':
+    prompt = f'{display_name} just requested adding the {user_input} 7tv emote!'
+    with InstanceContainer.app.app_context():
+      db_event_insert_one(
+        type=TWITCH_EVENT_TYPE['CHANNEL_POINT_REDEMPTION'],
+        event='unlock 7tv emote',
+        body=user_input
+      )
+    InstanceContainer.priority_queue.enqueue(
+      prompt=prompt,
+      priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE']
+    )
+  elif title == 'luna wheel' and user_input.count(',') > 0:
+    State.luna_wheel_queue.append(user_input)
+    InstanceContainer.ws.send(json.dumps({
+      'type': 'LUNA_WHEEL',
+      'payload': user_input
+    }))
+
+### END EVENTSUB API ###
 
 async def run_pytwitchapi():
   # chat api
@@ -316,3 +403,4 @@ async def run_pytwitchapi():
   await InstanceContainer.eventsub.listen_channel_subscription_gift(eventsub_user.id, eventsub_handle_listen_channel_subscription_gift)
   await InstanceContainer.eventsub.listen_channel_subscription_message(eventsub_user.id, eventsub_handle_listen_channel_subscription_message)
   await InstanceContainer.eventsub.listen_channel_cheer(eventsub_user.id, eventsub_handle_listen_channel_cheer)
+  await InstanceContainer.eventsub.listen_channel_points_custom_reward_redemption_add(eventsub_user.id, eventsub_handle_listen_channel_points_custom_reward_redemption_add)
