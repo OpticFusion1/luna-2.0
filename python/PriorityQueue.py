@@ -49,7 +49,7 @@ class PriorityQueue:
           self.queue[priority].append(Prompt)
         else:
           self.queue[priority][0] = Prompt
-      elif priority == PRIORITY_QUEUE_PRIORITIES['PRIORITY_PUBSUB_EVENTS_QUEUE']:
+      elif priority == PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE']:
         # this priority will build a long string containing all enqueued items.
         if len(self.queue[priority]) == 0:
           self.queue[priority].append(Prompt)

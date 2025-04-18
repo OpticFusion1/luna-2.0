@@ -1,7 +1,11 @@
 from twitchAPI.twitch import Twitch
-from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.oauth import UserAuthenticator, UserAuthenticationStorageHelper
 from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.chat import Chat, EventData, ChatMessage, ChatCommand
+from twitchAPI.helper import first
+from twitchAPI.eventsub.websocket import EventSubWebsocket
+from twitchAPI.object.eventsub import ChannelSubscribeEvent, ChannelSubscriptionGiftData, ChannelSubscriptionMessageEvent, ChannelCheerEvent
+import asyncio
 from uuid import UUID
 import os
 from enums import AZURE_SPEAKING_STYLE, VTS_EXPRESSIONS, PRIORITY_QUEUE_PRIORITIES, TWITCH_EVENTS, TWITCH_EVENT_TYPE
@@ -29,7 +33,8 @@ USER_SCOPE = [
   # chat
   AuthScope.CHAT_READ,
   AuthScope.CHAT_EDIT,
-  # eventsub
+]
+EVENTSUB_SCOPES = [
   AuthScope.CHANNEL_READ_REDEMPTIONS,
   AuthScope.BITS_READ,
   AuthScope.CHANNEL_READ_SUBSCRIPTIONS
@@ -213,8 +218,71 @@ async def terminate_pytwitchapi():
   InstanceContainer.chat.stop()
   # InstanceContainer.pubsub.stop()
   await InstanceContainer.twitch.close()
-    
+
+async def eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt):
+  InstanceContainer.ws.send(json.dumps({
+    'twitch_event': {
+      'event': TWITCH_EVENTS['SUB'],
+      'username': ws_sub_name,
+      'value': ws_message
+    }
+  }))
+  InstanceContainer.priority_queue.enqueue(
+    prompt=prompt,
+    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE']
+  )
+
+# handles first time, non-gifted subs
+async def eventsub_handle_listen_channel_subscribe(data: ChannelSubscribeEvent):
+  print('[PYTWITCHAPI]', data.event)
+  if not data.event.is_gift: # gift subs are handled separately in eventsub_handle_listen_channel_subscription_gift()
+    tier = f'Tier {int(data.event.tier) // 1000}'
+    ws_sub_name = data.event.user_name
+    ws_message = f'{tier} sub'
+    prompt = f'{ws_sub_name} just subscribed at {tier}!'
+    eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
+
+# handles gifted subs
+async def eventsub_handle_listen_channel_subscription_gift(data: ChannelSubscriptionGiftData):
+  print('[PYTWITCHAPI]', data.event)
+  tier = f'Tier {int(data.event.tier) // 1000}'
+  ws_sub_name = data.event.user_name or 'An anonymous gifter'
+  ws_message = f'{tier} sub'
+  prompt = f'{ws_sub_name} just subscribed at {tier}!'
+  eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
+
+# handles resubs only.
+async def eventsub_handle_listen_channel_subscription_message(data: ChannelSubscriptionMessageEvent):
+  print('[PYTWITCHAPI]', data.event)
+  tier = f'Tier {int(data.event.tier) // 1000}'
+  months = f' for {data.event.cumulative_months} months' if data.event.cumulative_months else ''
+  sub_message = f' Their sub message: {data.event.message.text}' if data.event.message.text else ''
+  ws_sub_name = data.event.user_name or 'An anonymous gifter'
+  ws_message = f'{tier} sub'
+  prompt = f'{ws_sub_name} just resubscribed at {tier}{months}!{sub_message}'
+  eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
+
+# handles bits.
+async def eventsub_handle_listen_channel_cheer(data: ChannelCheerEvent): 
+  print('[PYTWITCHAPI]', data.event)
+  user_name = data.event.user_name or 'An anonymous donator'
+  bits = data.event.bits
+  message = f' Their message: {data.event.message}'
+  prompt = f'{user_name} just cheered {bits} bits!{message}'
+  InstanceContainer.ws.send(json.dumps({
+    'twitch_event': {
+      'event': TWITCH_EVENTS['BITS'],
+      'username': user_name,
+      'value': str(bits)
+    }
+  }))
+  InstanceContainer.priority_queue.enqueue(
+    prompt=prompt, 
+    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_PUBSUB_EVENTS_QUEUE']
+  )
+
 async def run_pytwitchapi():
+  # chat api
   InstanceContainer.twitch = await Twitch(APP_ID, APP_SECRET)
   auth = UserAuthenticator(InstanceContainer.twitch, USER_SCOPE, force_verify=False)
   token, refresh_token = await auth.authenticate()
@@ -234,4 +302,17 @@ async def run_pytwitchapi():
   InstanceContainer.chat.register_command('pob', chat_on_command_build)
   InstanceContainer.chat.register_command('booba', chat_on_command_booba)
   # InstanceContainer.chat.register_command('join', chat_on_command_join)
+
   InstanceContainer.chat.start()
+  
+  # eventsub api
+  eventsub_helper = UserAuthenticationStorageHelper(InstanceContainer.twitch, EVENTSUB_SCOPES)
+  await eventsub_helper.bind()
+  eventsub_user = await first(InstanceContainer.twitch.get_users())
+  InstanceContainer.eventsub = EventSubWebsocket(InstanceContainer.twitch)
+  InstanceContainer.eventsub.start()  
+
+  await InstanceContainer.eventsub.listen_channel_subscribe(eventsub_user.id, eventsub_handle_listen_channel_subscribe)
+  await InstanceContainer.eventsub.listen_channel_subscription_gift(eventsub_user.id, eventsub_handle_listen_channel_subscription_gift)
+  await InstanceContainer.eventsub.listen_channel_subscription_message(eventsub_user.id, eventsub_handle_listen_channel_subscription_message)
+  await InstanceContainer.eventsub.listen_channel_cheer(eventsub_user.id, eventsub_handle_listen_channel_cheer)

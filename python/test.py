@@ -29,12 +29,12 @@ class TestPriorityQueue(unittest.TestCase):
         f'cant enqueue {priority}'
       )
 
-    q.enqueue(prompt='foo', priority='PRIORITY_PUBSUB_EVENTS_QUEUE')
-    q.enqueue(prompt='foo1', priority='PRIORITY_PUBSUB_EVENTS_QUEUE')
+    q.enqueue(prompt='foo', priority='PRIORITY_EVENTSUB_EVENTS_QUEUE')
+    q.enqueue(prompt='foo1', priority='PRIORITY_EVENTSUB_EVENTS_QUEUE')
     self.assertEqual(
-      q.get_items()['PRIORITY_PUBSUB_EVENTS_QUEUE'][0].prompt,
+      q.get_items()['PRIORITY_EVENTSUB_EVENTS_QUEUE'][0].prompt,
       'foo foo1',
-      'cant enqueue PRIORITY_PUBSUB_EVENTS_QUEUE'
+      'cant enqueue PRIORITY_EVENTSUB_EVENTS_QUEUE'
     )
 
     q.enqueue(prompt='foo', priority='PRIORITY_REMIND_ME')
@@ -114,12 +114,12 @@ class TestPriorityQueue(unittest.TestCase):
     self.assertEqual(
       Item.prompt,
       'foo foo1',
-      f'priority queue cant dequeue PRIORITY_PUBSUB_EVENTS_QUEUE (incorrect returned item)'
+      f'priority queue cant dequeue PRIORITY_EVENTSUB_EVENTS_QUEUE (incorrect returned item)'
     )
     self.assertEqual(
       Item.priority,
-      'PRIORITY_PUBSUB_EVENTS_QUEUE',
-      f'priority queue cant dequeue PRIORITY_PUBSUB_EVENTS_QUEUE (incorrect returned priority)'
+      'PRIORITY_EVENTSUB_EVENTS_QUEUE',
+      f'priority queue cant dequeue PRIORITY_EVENTSUB_EVENTS_QUEUE (incorrect returned priority)'
     )
 
     Item = q.dequeue()

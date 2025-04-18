@@ -33,7 +33,7 @@ class InstanceContainerClass:
     # pytwitchapi instances
     self.twitch = None
     self.chat = None
-    self.pubsub = None
+    self.eventsub = None
     
     print('[CONFIG] Initialized InstanceContainer.')
 

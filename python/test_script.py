@@ -5,7 +5,7 @@ def send_request(i):
     url = 'http://localhost:5001/receive_prompt'
     json_data = {
         'prompt': f'Vedal987 just gifted a tier 1 sub to anny{i}{i}{i}!',
-        'priority': 'PRIORITY_PUBSUB_EVENTS_QUEUE'
+        'priority': 'PRIORITY_EVENTSUB_EVENTS_QUEUE'
     }
     response = requests.post(url, json=json_data)
     return response.status_code
