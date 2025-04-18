@@ -1,11 +1,11 @@
 @font-face {
-  font-family: 'BubblegumSans-Regular';
-  src: URL('../public/BubblegumSans-Regular.ttf') format('truetype');
+  font-family: "BubblegumSans-Regular";
+  src: URL("../public/BubblegumSans-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'FiraMono-Medium';
-  src: URL('../public/FiraMono-Medium.ttf') format('truetype');
+  font-family: "FiraMono-Medium";
+  src: URL("../public/FiraMono-Medium.ttf") format("truetype");
 }
 
 .subtitles {
@@ -23,15 +23,22 @@
   flex-wrap: wrap;
   width: 100%;
   text-align: center;
-  font-family: 'BubblegumSans-Regular';
+  font-family: "BubblegumSans-Regular";
   font-weight: bold;
-  color: black;
-  text-shadow: 3px 3px 6px black;
-  text-shadow: 2px 2px 4px white;
-  -webkit-text-stroke-width: .4px;
-  -webkit-text-stroke-color: white;
   font-size: 72px;
   line-height: 88px;
+
+  /* ENABLE BELOW LINES FOR LUNA 1.0 PINK SUBTITLES*/
+  color: hotpink;
+  text-shadow: 2px 2px 4px black;
+  -webkit-text-stroke: 1px black;
+
+  /* ENABLE BELOW LINES FOR LUNA 2.0 BLACK SUBTITLES*/
+  // color: black;
+  // text-shadow: 3px 3px 6px black;
+  // text-shadow: 2px 2px 4px white;
+  // -webkit-text-stroke-width: .4px;
+  // -webkit-text-stroke-color: white;
 
   .subtitle_text_inline_emote_container {
     height: 88px; /* the container height is .subtitle_text line-height. */
