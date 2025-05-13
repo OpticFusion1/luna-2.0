@@ -1,0 +1,47 @@
+.word_game_progress_bar {
+  width: 100%;
+  background: hotpink;
+  position: relative;
+  border-radius: 10px;
+  height: 20px;
+  width: 1620px;
+  margin: 0 auto 20px auto;
+  overflow: hidden;
+
+  .fill {
+    background: #66ffc2;
+    position: absolute;
+    border-radius: 10px;
+    height: 20px;
+    width: 1620px;
+    left: 0;
+    top: 0;
+    animation-fill-mode: forwards;
+
+    &.animation--shrink {
+      animation: shrinkWidth 60s linear;
+    }
+
+    &.animation--expand {
+      animation: expandWidth 15s linear;
+    }
+  }
+}
+
+@keyframes shrinkWidth {
+  0% {
+    width: 1620px;
+  }
+  100% {
+    width: 0px;
+  }
+}
+
+@keyframes expandWidth {
+  0% {
+    width: 0px;
+  }
+  100% {
+    width: 1620px;
+  }
+}

@@ -75,14 +75,14 @@ async def chat_on_message(msg: ChatMessage):
     )
     return
 
-  # bits are handled in pubsub, so we ignore bit messages here
+  # bits are handled in eventsub, so we ignore bit messages here
   if (
     msg.bits
     or WHISPER_PREFIX_TEXT in msg.text # channel point redemption will send a normal message too
     or RANT_PREFIX_TEXT in msg.text # channel point redemption will send a normal message too
   ):
     return
-  
+
   InstanceContainer.ws.send(json.dumps({
     'twitch_event': {
       'event': TWITCH_EVENTS['MESSAGE'],
@@ -90,6 +90,7 @@ async def chat_on_message(msg: ChatMessage):
       'value': msg.text
     }
   }))
+
 
   prompt = f'{msg.user.name}: {msg.text}'
   is_at_luna = '@luna' in msg.text.lower() or '@hellfire' in msg.text.lower()
@@ -221,7 +222,6 @@ async def chat_on_command_ban(cmd: ChatCommand):
 
 async def terminate_pytwitchapi():
   InstanceContainer.chat.stop()
-  # InstanceContainer.pubsub.stop()
   await InstanceContainer.twitch.close()
 
 ### END GENERIC PYTWITCHAPI ###
@@ -250,7 +250,7 @@ async def eventsub_handle_listen_channel_subscribe(data: ChannelSubscribeEvent):
     ws_sub_name = event.user_name
     ws_message = f'{tier} sub'
     prompt = f'{ws_sub_name} just subscribed at {tier}!'
-    eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
+    await eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
 
 # handles gifted subs
 async def eventsub_handle_listen_channel_subscription_gift(data: ChannelSubscriptionGiftData):
@@ -260,19 +260,19 @@ async def eventsub_handle_listen_channel_subscription_gift(data: ChannelSubscrip
   ws_sub_name = event.user_name or 'An anonymous gifter'
   ws_message = f'{tier} sub'
   prompt = f'{ws_sub_name} just subscribed at {tier}!'
-  eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
+  await eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
 
 # handles resubs only.
 async def eventsub_handle_listen_channel_subscription_message(data: ChannelSubscriptionMessageEvent):
   event = data.event
-  print('[PYTWITCHAPI]', { 'tier': event.tier, 'user_name': event.user_name, 'is_gift': event.is_gift, 'cumulative_months': event.cumulative_months, 'message.text': event.message.text })
+  print('[PYTWITCHAPI]', { 'tier': event.tier, 'user_name': event.user_name, 'cumulative_months': event.cumulative_months, 'message.text': event.message.text })
   tier = f'Tier {int(event.tier) // 1000}'
   months = f' for {event.cumulative_months} months' if event.cumulative_months else ''
   sub_message = f' Their sub message: {event.message.text}' if event.message.text else ''
   ws_sub_name = event.user_name or 'An anonymous gifter'
   ws_message = f'{tier} sub'
   prompt = f'{ws_sub_name} just resubscribed at {tier}{months}!{sub_message}'
-  eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
+  await eventsub_send_sub_event_to_ws_and_priority_queue(ws_sub_name, ws_message, prompt)
 
 # handles bits.
 async def eventsub_handle_listen_channel_cheer(data: ChannelCheerEvent):
@@ -404,3 +404,7 @@ async def run_pytwitchapi():
   await InstanceContainer.eventsub.listen_channel_subscription_message(eventsub_user.id, eventsub_handle_listen_channel_subscription_message)
   await InstanceContainer.eventsub.listen_channel_cheer(eventsub_user.id, eventsub_handle_listen_channel_cheer)
   await InstanceContainer.eventsub.listen_channel_points_custom_reward_redemption_add(eventsub_user.id, eventsub_handle_listen_channel_points_custom_reward_redemption_add)
+
+  user = await first(InstanceContainer.twitch.get_users(logins='smokie_777'))
+  # print the ID of your user or do whatever else you want with it
+  print('[PYTWITCHAPI]', user.id)

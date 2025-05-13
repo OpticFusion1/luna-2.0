@@ -3,3 +3,9 @@ export type azureTTSSubtitle = {
   text_offset: number;
   text?: string;
 };
+
+export interface FoundWord {
+  username: string;
+  value: string;
+  isRevealed: boolean;
+}
