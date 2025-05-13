@@ -1,0 +1,72 @@
+@font-face {
+  font-family: "BubblegumSans-Regular";
+  src: URL("../public/BubblegumSans-Regular.ttf") format("truetype");
+}
+
+.word_game {
+  width: 100%;
+  font-family: "BubblegumSans-Regular";
+  background: #333333;
+  height: 100vh;
+
+  .word_game_container {
+    margin: auto;
+
+    .title {
+      padding: 20px;
+      margin: auto;
+      color: hotpink;
+      font-weight: bold;
+      font-size: 72px;
+      line-height: 88px;
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+
+      /* ENABLE BELOW LINES FOR LUNA 1.0 PINK SUBTITLES*/
+      color: hotpink;
+      text-shadow: 2px 2px 4px black;
+      -webkit-text-stroke: 1px black;
+    }
+
+    .game_letters {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+
+    .found_words {
+      display: grid;
+      grid-template-columns: 800px 800px;
+      gap: 20px;
+      justify-content: center;
+      margin: auto;
+
+      .ghost_word {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        padding: 20px;
+        border-radius: 10px;
+        background: #4f4f4f;
+        box-shadow: 4px 4px 16px black;
+
+        .ghost_letter {
+          width: 75px;
+          height: 75px;
+          background: #333333;
+          box-shadow: 2px 2px 8px hotpink;
+          border-radius: 5px;
+        }
+      }
+
+      .found_word {
+        display: flex;
+        gap: 10px;
+      }
+    }
+  }
+}
