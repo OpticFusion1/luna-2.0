@@ -19,11 +19,11 @@
     animation-fill-mode: forwards;
 
     &.animation--shrink {
-      animation: shrinkWidth 60s linear;
+      animation: shrinkWidth 120s linear;
     }
 
     &.animation--expand {
-      animation: expandWidth 15s linear;
+      animation: expandWidth 30s linear;
     }
   }
 }

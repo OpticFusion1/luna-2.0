@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { wordlist } from "./wordlist";
 import { WordGameLetter } from "./WordGameLetter";
-import { FoundWord } from "./types";
+import { FoundWord } from "../types";
 import { WordGameFoundWord } from "./WordGameFoundWord";
 import { WordGameProgressBar } from "./WordGameProgressBar";
 import "./WordGame.scss";
@@ -99,10 +99,10 @@ export const WordGame = () => {
     gameTimeoutRef.current = setTimeout(() => {
       revealWords();
       setProgressBarAnimKey((prevState) => prevState + 1);
-    }, 60000); // one minute
+    }, 120000); // 2 minutes
     gameResetTimeoutRef.current = setTimeout(() => {
       resetGame();
-    }, 60000 + 15000); // one minute + 15 seconds
+    }, 120000 + 30000); // 2 minutes + 30 seconds
   };
 
   useEffect(() => {

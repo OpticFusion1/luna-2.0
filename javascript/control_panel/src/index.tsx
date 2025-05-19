@@ -8,7 +8,7 @@ import { convertTimeHmsStringToMs } from "./utils";
 import { DataProvider } from "./DataProvider";
 import { Stopwatch } from "./Stopwatch";
 import { WheelPage } from "./Wheel";
-import { WordGame } from "./WordGame";
+import { WordGame } from "./WordGame/WordGame";
 
 const router = createBrowserRouter([
   {
