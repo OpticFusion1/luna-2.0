@@ -1,12 +1,12 @@
 @font-face {
   font-family: "BubblegumSans-Regular";
-  src: URL("../public/BubblegumSans-Regular.ttf") format("truetype");
+  src: URL("../../public/BubblegumSans-Regular.ttf") format("truetype");
 }
 
 .word_game {
   width: 100%;
   font-family: "BubblegumSans-Regular";
-  background: #333333;
+  background: #222222;
   height: 100vh;
 
   .word_game_container {

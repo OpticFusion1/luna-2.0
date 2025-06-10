@@ -1,14 +1,8 @@
-@font-face {
-  font-family: "BubblegumSans-Regular";
-  src: URL("../public/BubblegumSans-Regular.ttf") format("truetype");
-}
-
 .word_game_letter {
   height: 100px;
   width: 100px;
   box-shadow: 8px 8px 16px black;
   border-radius: 5px;
-  font-family: "BubblegumSans-Regular";
   background: hotpink;
   color: black;
   text-align: center;
