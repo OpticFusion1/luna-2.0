@@ -19,7 +19,7 @@ The repo is called heavenfire because it was originally meant for a new AI VTube
 
 # demo
 
-[https://github.com/smokie777/heavenfire/assets/31945139/f2281aeb-c332-4695-9ffe-c80fc1346d6f](https://www.youtube.com/watch?v=FEa1hors4jM)
+https://www.youtube.com/watch?v=FEa1hors4jM
 
 # ai vtuber features
 
