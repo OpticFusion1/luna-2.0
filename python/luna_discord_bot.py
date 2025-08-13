@@ -8,7 +8,6 @@ from datetime import timedelta
 from dotenv import load_dotenv; load_dotenv()
 from log_error import log_error
 from llm_openai import gen_llm_response
-from datetime import timedelta
 import re
 from find_banned_words import find_banned_words
 
@@ -61,6 +60,7 @@ VOICE_TEXT_CHANNEL_ID = 1141966787404124221
 LIVE_ANNOUNCEMENTS_CHANNEL_ID = 1139812500032987166
 SELF_PROMO_CHANNEL_ID = 1142501340459839488
 SCHEDULE_CHANNEL_ID = 1168991964201484338
+POLL_CHANNEL_ID = 1263352851133104253
 
 client = discord.Client(intents=discord.Intents.all())
 
@@ -104,8 +104,8 @@ async def on_message(message):
       banned_words_in_message = find_banned_words(str(message.clean_content))
       prompt = f'Announce that you\'ve just timed out {str(message.author.display_name)} for 30 seconds for saying a banned word: {banned_words_in_message[0]} (mention the banned word in your response)'
       try:
-        timedelta = gen_timeout_timedelta('30s')
-        await message.author.timeout(timedelta, reason='timed out by luna')
+        timeout_timedelta = gen_timeout_timedelta('30s')
+        await message.author.timeout(timeout_timedelta, reason='timed out by luna')
         (_, _, edited) = gen_llm_response(prompt)
         await message.reply(edited)
       except Exception as e:
@@ -173,6 +173,22 @@ async def on_message(message):
               async with channel.typing():
                 await asyncio.sleep(random.uniform(2, 4))
               await channel.send(message_to_send)
+          # luna bot create poll functionality
+          elif (str(message.author) == 'smokie_777' and '@Luna !poll' in str(message.clean_content)):
+            (_, _, edited) = gen_llm_response('Generate a wild and crazy poll for the discord server! Format should be QUESTION: your question here ANSWERS: answer1,answer2,answer3. (The answers should be a comma-separated list, and you must include QUESTION: and ANSWERS: sections) Example: QUESTION: What should Smokie stream next? ANSWERS: her eating,her sleeping,her doing literally nothing,her throwing rocks at seagulls')
+            print('!poll attempting to create poll from input: ', edited)
+            try:
+              _, qa_part = edited.split('QUESTION:', 1)
+              question_part, answers_part = qa_part.split('ANSWERS:', 1)
+              question = question_part.strip()
+              answers = [ans.strip() for ans in answers_part.split(',')]
+              p = discord.Poll(question=question, duration=timedelta(hours=24))
+              for i in answers:
+                p.add_answer(text=i)
+              channel = client.get_channel(LUNA_AND_SMOKIE_ONLY_CHANNEL_ID if '!polltest' in str(message.clean_content) else POLL_CHANNEL_ID)
+              await channel.send(poll=p)
+            except:
+              print('!poll failed to create poll from input: ', edited)
           # live-announcements stream alert notif functionality
           elif (str(message.author) == 'smokie_777' and '@Luna !live' in str(message.clean_content)):
             (_, _, edited) = gen_llm_response('Smokie: Luna, we\'re about to go live on Twitch! Can you come up a spicy discord alert message to let everyone know we\'re about to go live?')
@@ -208,8 +224,8 @@ async def on_message(message):
             time_string = s.split('|')[1].strip()
             reason = s.split('|')[2].strip() if s.count('|') == 2 else None
             try:
-              timedelta = gen_timeout_timedelta(time_string)
-              await message.mentions[1].timeout(timedelta, reason=reason)
+              timeout_timedelta = gen_timeout_timedelta(time_string)
+              await message.mentions[1].timeout(timeout_timedelta, reason=reason)
               reason_string = f'Reason: {reason}. ' if reason else ''
               (_, _, edited) = gen_llm_response(f'Smokie: luna, announce that you\'ve just timed out {message.mentions[1].display_name} for {time_string}. {reason_string}Feel free to include some spice :)')
               async with message.channel.typing():
