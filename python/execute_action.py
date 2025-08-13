@@ -20,6 +20,7 @@ def execute_action(Prompt):
     eleven_labs_tts_speak(Prompt.prompt)
   else:
     start_time = time()
+    print('executing action', Prompt)
     (prompt, raw, edited) = gen_llm_response(Prompt.prompt)
     latency_llm = round((time() - start_time), 3)
 

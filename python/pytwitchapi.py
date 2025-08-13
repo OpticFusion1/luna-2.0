@@ -37,7 +37,13 @@ USER_SCOPE = [
 EVENTSUB_SCOPES = [
   AuthScope.CHANNEL_READ_REDEMPTIONS,
   AuthScope.BITS_READ,
-  AuthScope.CHANNEL_READ_SUBSCRIPTIONS
+  AuthScope.CHANNEL_READ_SUBSCRIPTIONS,
+  # spaghetti code below this line
+  # twitch
+  AuthScope.MODERATOR_MANAGE_BANNED_USERS,
+  # chat
+  AuthScope.CHAT_READ,
+  AuthScope.CHAT_EDIT,
 ]
 TARGET_CHANNEL = 'smokie_777'
 
@@ -141,7 +147,7 @@ async def chat_on_command_discord(cmd: ChatCommand):
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!discord')
 
 async def chat_on_command_profile(cmd: ChatCommand):
-  await cmd.reply('https://www.pathofexile.com/account/view-profile/smokie_777/characters')
+  await cmd.reply('https://www.pathofexile.com/account/view-profile/smokie_777-0684/characters')
   with InstanceContainer.app.app_context():
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!profile')
 
@@ -151,60 +157,30 @@ async def chat_on_command_filter(cmd: ChatCommand):
   with InstanceContainer.app.app_context():
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!filter')
 
-async def chat_on_command_video(cmd: ChatCommand):
-  await cmd.reply('https://www.youtube.com/@smokie_777')
-  with InstanceContainer.app.app_context():
-    db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!video')
-
 async def chat_on_command_build(cmd: ChatCommand):
-  await cmd.reply('https://pobb.in/mNxCKLr5UVYE')
+  await cmd.reply('https://pobb.in/wB-adbc9Vmxa')
   with InstanceContainer.app.app_context():
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!build')
-
-async def chat_on_command_rip(cmd: ChatCommand):
-  await cmd.reply('https://clips.twitch.tv/SpotlessImportantTigerNotATK-y8BriY_NBlNwA8a5')
-  with InstanceContainer.app.app_context():
-    db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!rip')
 
 async def chat_on_command_booba(cmd: ChatCommand):
   await cmd.reply(' '.join(booba_emotes))
   with InstanceContainer.app.app_context():
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!booba')
 
-async def chat_on_command_join(cmd: ChatCommand):
-  if not cmd.user.name in State.raffle_entries_set:
-    State.raffle_entries_set.add(cmd.user.name)
-    # await cmd.reply(f'successfully joined the giveaway! ({len(State.raffle_entries_set)} people have joined so far.)')
-    InstanceContainer.ws.send(json.dumps({
-      'type': 'SET_TOAST',
-      'payload': f'{cmd.user.name} joined the giveaway! ({len(State.raffle_entries_set)} joined so far)'
-    }))
-    with InstanceContainer.app.app_context():
-      db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!join')
+async def chat_on_command_drops(cmd: ChatCommand):
+  await cmd.reply('https://www.pathofexile.com/forum/view-thread/3789151')
+  with InstanceContainer.app.app_context():
+    db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!drops')
 
-async def chat_on_command_play(cmd: ChatCommand):
-  parameters = cmd.parameter.strip().lower().split(maxsplit=2)
-  start_tile = parameters[0].strip() if len(parameters) > 0 else ''
-  letters = parameters[1].strip() if len(parameters) > 1 else ''
-  print('[SCRABBLE]', parameters, start_tile, letters)
-  coordinate_str = start_tile[:-1] if start_tile[-1] in ['h', 'v'] else start_tile
-  if (
-    not letters.replace('_', '').isalpha()
-    or not is_valid_scrabble_tile(coordinate_str)
-  ):
-    return
-  InstanceContainer.ws.send(json.dumps({
-    'scrabble_chat_command': {
-      'type': 'play',
-      'username': cmd.user.name,
-      'letters': letters.upper(),
-      # "start tile" refers to the leftmost/upmost tile of the primary word created.
-      'startTileX': ord(coordinate_str[0]) - ord('a'), # already accounts for 0 index
-      'startTileY': 14 - (int(coordinate_str[1:]) - 1), # subtract 1 to account for 0 index. invert for UI
-      # default direction to 'horizontal'
-      'direction': 'vertical' if start_tile[-1] == 'v' else 'horizontal'
-    }
-  }))
+async def chat_on_command_promote(cmd: ChatCommand):
+  prompt = f'Announce to chat that if they gift 2 subs, they can get some cool Path of Exile MTX for free!'
+  InstanceContainer.priority_queue.enqueue(
+    prompt=prompt,
+    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
+  )
+  await cmd.reply('https://www.pathofexile.com/forum/view-thread/3789151')
+  with InstanceContainer.app.app_context():
+    db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!promote')
 
 async def chat_on_command_ban(cmd: ChatCommand):
   if cmd.user.name == 'smokie_777':
@@ -381,13 +357,12 @@ async def run_pytwitchapi():
   InstanceContainer.chat.register_command('discord', chat_on_command_discord)
   InstanceContainer.chat.register_command('profile', chat_on_command_profile)
   InstanceContainer.chat.register_command('filter', chat_on_command_filter)
-  InstanceContainer.chat.register_command('video', chat_on_command_video)
-  InstanceContainer.chat.register_command('play', chat_on_command_play)
   InstanceContainer.chat.register_command('ban', chat_on_command_ban)
-  InstanceContainer.chat.register_command('rip', chat_on_command_rip)
   InstanceContainer.chat.register_command('build', chat_on_command_build)
   InstanceContainer.chat.register_command('pob', chat_on_command_build)
   InstanceContainer.chat.register_command('booba', chat_on_command_booba)
+  InstanceContainer.chat.register_command('promote', chat_on_command_promote)
+  InstanceContainer.chat.register_command('drops', chat_on_command_drops)
   # InstanceContainer.chat.register_command('join', chat_on_command_join)
 
   InstanceContainer.chat.start()
