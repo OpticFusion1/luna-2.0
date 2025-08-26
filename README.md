@@ -1,21 +1,27 @@
 # about
+This is an AI VTuber program that can autonomously stream on Twitch!
 
-Luna the AI VTuber<br />
+luna the ai vtuber<br />
 <img src="./readme_assets/image.png" alt="luna" width="350" />
 
-# demo
-
-https://www.youtube.com/watch?v=FEa1hors4jM
-
-# ai vtuber features
-
+# features
 - read & respond to twitch chat, with short term memory and some long term memory
 - acknowledge new twitch subscribers, bit donos, etc.
-- listen to and respond to my voice
+- listen to and respond to my voice input
 - sing
 - react to screen/pictures/videos
 - play scrabble
 - chat to people in discord using a discord bot, using text and/or voice
+
+# docs
+I wrote some docs here to explain how everything works. Highly recommend you check this out if you are a developer, or just curious about the project.
+
+https://smokie777.github.io/luna-2.0-docs/
+
+
+# demo
+
+https://www.youtube.com/watch?v=FEa1hors4jM
 
 # technical features/technologies used
 
