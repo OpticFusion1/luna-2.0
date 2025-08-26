@@ -1,21 +1,7 @@
-# heavenfire
-
-Hi, everyone! This is the monorepo codebase for my AI VTuber project.
-
 # about
 
-I've been working on this on & off since June 2023. I've set the repo to private for a long while, because I was actually streaming with it and didn't want to reveal all of how it worked. But, recently I've decided to make this repo public, as the AI VTuber hype seems to be dying down a bit, and I want to show off what I've built. And, who knows, maybe someone will be inspired by this project, or learn something from it.
-
-Note that you won't be able to actually run this project if you clone it - there are way too many external application dependencies and complications, and also I have gitignored several sensitive files, such as environment files, prompt files, and training datasets. In addition, Luna's LLM is a fine-tuned model linked to my OpenAI account. This is because I built this project as something I can run from my own unique PC setup, not to distribute this as software - if you want to run your own AI VTuber, I recommend you build your own from the ground up, or use something like w_AI_fu which is designed for you to use.
-
-Luna<br />
+Luna the AI VTuber<br />
 <img src="./readme_assets/image.png" alt="luna" width="350" />
-
-Heavenfire<br />
-<img src="./readme_assets/image-1.png" alt="heavenfire" width="350" />
-<br />
-
-The repo is called heavenfire because it was originally meant for a new AI VTuber I was making called Heavenfire Phyllis. But, due to difficulties in finding a good enough TTS for her, I have postponed the project indefinitely. Currently, I'm just running Luna out of this repo.
 
 # demo
 
