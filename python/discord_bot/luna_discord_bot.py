@@ -36,7 +36,7 @@ LIVE_ANNOUNCEMENTS_CHANNEL_ID = 1139812500032987166
 SELF_PROMO_CHANNEL_ID = 1142501340459839488
 SCHEDULE_CHANNEL_ID = 1168991964201484338
 POLL_CHANNEL_ID = 1263352851133104253
-
+LUNA_CHAT_CHANNEL_ID = 1161791943152521277
 
 @client.event
 async def delayed_message(channel, message):
@@ -222,7 +222,8 @@ async def on_message(message):
               vc = await channel.connect()
           elif (str(message.author) == 'smokie_777' and '@Luna !reply ' in str(message.clean_content)):
             message_id = str(message.clean_content).replace('@Luna !reply ', '')
-            target_messsage = await message.channel.fetch_message(message_id)
+            luna_chat_channel = client.get_channel(LUNA_CHAT_CHANNEL_ID)
+            target_messsage = await luna_chat_channel.fetch_message(message_id)
             prompt = str(target_messsage.author.display_name) + ': ' + str(target_messsage.clean_content)
             (_, _, edited) = gen_llm_response(prompt)
             async with target_messsage.channel.typing():
