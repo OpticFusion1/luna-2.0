@@ -20,6 +20,7 @@ class PriorityQueue:
     azure_speaking_style = None,
     is_speaking_fast = False,
     username_to_ban = None,
+    username_to_unban = None,
     is_eleven_labs = False,
     should_generate_audio_file_only = False,
     pytwitchapi_args = {},
@@ -32,6 +33,7 @@ class PriorityQueue:
         azure_speaking_style=azure_speaking_style,
         is_speaking_fast=is_speaking_fast,
         username_to_ban=username_to_ban,
+        username_to_unban=username_to_unban,
         is_eleven_labs=is_eleven_labs,
         should_generate_audio_file_only=should_generate_audio_file_only,
         pytwitchapi_args=pytwitchapi_args

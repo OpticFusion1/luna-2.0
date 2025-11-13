@@ -27,6 +27,9 @@ class StateClass:
     self.is_singing = False
     # speaking speed
     self.is_speaking_fast = False
+    # id of last banned user
+    self.last_banned_user_id = None
+    self.last_banned_user_name = 'nabbebabbe_'
 
     # stores tuples like ('remind foo to bar!', datetime)
     self.remind_me_prompts_and_datetime_queue = []

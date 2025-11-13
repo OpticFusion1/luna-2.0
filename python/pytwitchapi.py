@@ -12,7 +12,7 @@ from enums import AZURE_SPEAKING_STYLE, VTS_EXPRESSIONS, PRIORITY_QUEUE_PRIORITI
 from vts_set_expression import vts_set_expression
 from dotenv import load_dotenv; load_dotenv()
 from utils import does_one_word_start_with_at
-from pytwitchapi_helpers import is_valid_scrabble_tile, send_ban_user_via_username_event_to_priority_queue, is_twitch_message_bot_spam
+from pytwitchapi_helpers import is_valid_scrabble_tile, send_ban_user_via_username_event_to_priority_queue, send_unban_last_user_event_to_priority_queue, is_twitch_message_bot_spam
 import json
 from remind_me import convert_time_hms_string_to_ms
 from datetime import datetime, timedelta
@@ -58,6 +58,13 @@ async def chat_on_ready(ready_event: EventData):
 
 async def chat_on_message(msg: ChatMessage):
   # print(msg.__dict__)
+
+  if (
+    '!unban' in msg.text
+    and msg.user.name == 'smokie_777'
+  ):
+    send_unban_last_user_event_to_priority_queue()
+    return
 
   if (
     msg._parsed['tags']['first-msg'] == '1'
@@ -158,7 +165,7 @@ async def chat_on_command_filter(cmd: ChatCommand):
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!filter')
 
 async def chat_on_command_build(cmd: ChatCommand):
-  await cmd.reply('https://pobb.in/wB-adbc9Vmxa')
+  await cmd.reply('https://www.youtube.com/watch?v=qBYLl_eUIbc')
   with InstanceContainer.app.app_context():
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!build')
 

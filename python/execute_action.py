@@ -3,7 +3,7 @@ import json
 from time import sleep, time
 from enums import PRIORITY_QUEUE_PRIORITIES, TWITCH_EVENTS
 from utils import extract_username_to_timeout_from_string
-from pytwitchapi_helpers import ban_user_via_username
+from pytwitchapi_helpers import ban_user_via_username, unban_last_banned_user
 from db import db_message_insert_one
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -68,6 +68,24 @@ def execute_action(Prompt):
           'twitch_event': {
             'event': TWITCH_EVENTS['BAN'],
             'username': Prompt.username_to_ban,
+            'value': None
+          }
+        }))
+
+      if Prompt.username_to_unban:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        with ThreadPoolExecutor() as pool:
+          # Ensure the loop runs in a new thread
+          loop.run_in_executor(
+            pool,
+            asyncio.run,
+            unban_last_banned_user()
+          )
+        InstanceContainer.ws.send(json.dumps({
+          'twitch_event': {
+            'event': TWITCH_EVENTS['BAN'],
+            'username': Prompt.username_to_unban,
             'value': None
           }
         }))

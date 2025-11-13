@@ -37,6 +37,10 @@ SELF_PROMO_CHANNEL_ID = 1142501340459839488
 SCHEDULE_CHANNEL_ID = 1168991964201484338
 POLL_CHANNEL_ID = 1263352851133104253
 LUNA_CHAT_CHANNEL_ID = 1161791943152521277
+LANDING_MESSAGE_ID = 1438637651149459468
+MEMBER_ROLE_ID = 1438631652346695772
+AUTOBAN_CHANNEL_ID = 1438644981240692901
+MASH_CHANNEL_ID = 1140354882038157393
 
 @client.event
 async def delayed_message(channel, message):
@@ -58,6 +62,46 @@ async def on_member_join(member):
   await channel.send('<:lunaErm:1256725746668404827>')
 
 @client.event
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+  # Ignore bot reactions
+  if payload.user_id == client.user.id:
+    return
+
+  # Only care about a specific message
+  if payload.message_id != LANDING_MESSAGE_ID:
+    return
+
+  emoji_str = str(payload.emoji)  # "✅" or "<:name:id>" for custom emoji
+  print(emoji_str)
+
+  if emoji_str != '🤔':
+    return
+
+  guild = client.get_guild(payload.guild_id)
+  if guild is None:
+    return
+
+  role = guild.get_role(MEMBER_ROLE_ID)
+  if role is None:
+    return
+
+  member = guild.get_member(payload.user_id)
+  if member is None:
+    # fallback if not cached
+    try:
+      member = await guild.fetch_member(payload.user_id)
+    except discord.NotFound:
+      return
+
+  # Finally, add the role
+  try:
+    await member.add_roles(role, reason="Reaction role")
+  except discord.Forbidden:
+    print("Missing permissions to add role.")
+  except discord.HTTPException as e:
+    print(f"Failed to add role: {e}")
+
+@client.event
 async def on_message(message):
   global current_minute
   global current_hour
@@ -73,8 +117,21 @@ async def on_message(message):
   is_luna_busy = True
 
   if message.guild.id == GUILD_ID:
+    # bot auto ban
+    if message.channel.id == AUTOBAN_CHANNEL_ID:
+      (_, _, edited) = gen_llm_response('Smokie: luna, announce that you\'ve just banned ' + message.author.display_name + ' out of your discord server, for being a likely spam bot. feel free to include some spice :). They got banned for the following message: ' + message.clean_content[0:100])
+      channel = client.get_channel(MASH_CHANNEL_ID)
+      async with channel.typing():
+        await asyncio.sleep(random.uniform(2, 4))
+      await channel.send(edited)
+
+      async with channel.typing():
+        await asyncio.sleep(random.uniform(2, 4))
+      await channel.send(f'@smokie_777 username={message.author.display_name} message={message.clean_content}')
+
+      await message.author.ban()
     # moderation flow: runs on every message in the discord server
-    if len(find_banned_words(str(message.clean_content))):
+    elif len(find_banned_words(str(message.clean_content))):
       banned_words_in_message = find_banned_words(str(message.clean_content))
       prompt = f'Announce that you\'ve just timed out {str(message.author.display_name)} for 30 seconds for saying a banned word: {banned_words_in_message[0]} (mention the banned word in your response)'
       try:
@@ -86,7 +143,7 @@ async def on_message(message):
         log_error(e, '(discord bot)')
         await message.reply('Someone tell @smokie_777 there is a problem with my AI.')
     # main flow: only respond to messages if BOTH message is in the server AND @Luna was mentioned
-    elif int(os.environ['LUNA_DISCORD_BOT_ID']) in [m.id for m in message.mentions]:
+    elif '@luna' in str(message.clean_content).lower() or (int(os.environ['LUNA_DISCORD_BOT_ID']) in [m.id for m in message.mentions]):
       # print('message.activity: ', message.activity)
       # print('message.application: ', message.application)
       # print('message.application_id: ', message.application_id)
@@ -165,10 +222,15 @@ async def on_message(message):
               print('!poll failed to create poll from input: ', edited)
           # live-announcements stream alert notif functionality
           elif (str(message.author) == 'smokie_777' and '@Luna !live' in str(message.clean_content)):
+            print('a')
             (_, _, edited) = gen_llm_response('Smokie: Luna, we\'re about to go live on Twitch! Can you come up a spicy discord alert message to let everyone know we\'re about to go live?')
+            print('b')
             message_to_send = f'@here {edited} https://www.twitch.tv/smokie_777'
+            print('c')
             channel = client.get_channel(LIVE_ANNOUNCEMENTS_CHANNEL_ID)
+            print('d')
             await channel.send(message_to_send)
+            print('e')
           # send message after delay functionality
           elif (str(message.author) == 'smokie_777' and '@Luna !beep' in str(message.clean_content)):
             message_to_send = f'Beep! This is a test mesage sent by Luna after a 12 hour delay.'
