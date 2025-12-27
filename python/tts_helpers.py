@@ -3,10 +3,12 @@ from datetime import datetime
 import os
 import contextlib
 import wave
+from enums import PYAUDIO_DEVICE_NAME
 
-def get_pyaudio_output_audio_index():
+def get_pyaudio_output_audio_index(device_name = ''):
   p = pyaudio.PyAudio()
-  output_device_name = 'CABLE Input' # for production
+  output_device_name = PYAUDIO_DEVICE_NAME[device_name if device_name else 'CABLE_INPUT']
+  # output_device_name = 'CABLE Input' # for production
   # output_device_name = 'Speakers' # for development
   # output_device_name = 'Headphones' # for development
   # output_device_name = 'Built-in Output' # for development on macbook

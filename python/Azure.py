@@ -8,6 +8,7 @@ import azure.cognitiveservices.speech as speechsdk
 from threading import Thread
 import emoji
 import re
+import numpy as np
 from dotenv import load_dotenv; load_dotenv()
 from enums import PRIORITY_QUEUE_PRIORITIES
 from tts_helpers import get_pyaudio_output_audio_index, gen_output_audio_filename
@@ -15,7 +16,8 @@ from tts_helpers import get_pyaudio_output_audio_index, gen_output_audio_filenam
 
 class Azure:
   # TTS
-  OUTPUT_AUDIO_INDEX = get_pyaudio_output_audio_index()
+  OUTPUT_AUDIO_INDEX_PROD = get_pyaudio_output_audio_index()
+  OUTPUT_AUDIO_INDEX_MONITOR = get_pyaudio_output_audio_index('SPEAKERS')
   AZURE_POST_URL = f'https://{os.environ["SPEECH_REGION"]}.tts.speech.microsoft.com/cognitiveservices/v1'
   AZURE_POST_HEADERS = {
     'Ocp-Apim-Subscription-Key': os.environ['SPEECH_KEY'],
@@ -121,21 +123,32 @@ class Azure:
     wf = wave.open(output_filename, 'rb')
     p = pyaudio.PyAudio()
     chunk = 1024
-    stream = p.open(
+    output_stream = p.open(
       format=p.get_format_from_width(wf.getsampwidth()),
       channels=wf.getnchannels(),
       rate=wf.getframerate(),
       output=True,
-      output_device_index=self.OUTPUT_AUDIO_INDEX # play the wav file through virtual cable input
+      output_device_index=self.OUTPUT_AUDIO_INDEX_PROD
+    )
+    monitor_stream = p.open(
+      format=p.get_format_from_width(wf.getsampwidth()),
+      channels=wf.getnchannels(),
+      rate=wf.getframerate(),
+      output=True,
+      output_device_index=self.OUTPUT_AUDIO_INDEX_MONITOR
     )
     data = wf.readframes(chunk)
     while len(data) > 0:
       if State.tts_green_light:
-        stream.write(data)
+        output_stream.write(data)
+        data_numpy_array = np.frombuffer(data, dtype=np.int16)
+        data_numpy_array = (data_numpy_array * 0.07).astype(np.int16)
+        monitor_stream.write(data_numpy_array.tobytes())
         data = wf.readframes(chunk)
       else:
         break
-    stream.close()
+    output_stream.close()
+    monitor_stream.close()
     p.terminate()
   
   def recognize_from_microphone(self):

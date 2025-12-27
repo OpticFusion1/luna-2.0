@@ -19,7 +19,11 @@ banned_twitch_keywords = [
   'poe2',
   'hots',
   'rao',
-  'raos'
+  'raos',
+  'diablo',
+  'blizzard',
+  'jonathan',
+  'rogers',
 ]
 
 booba_emotes = [

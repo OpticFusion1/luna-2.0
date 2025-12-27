@@ -39,7 +39,7 @@ POLL_CHANNEL_ID = 1263352851133104253
 LUNA_CHAT_CHANNEL_ID = 1161791943152521277
 LANDING_MESSAGE_ID = 1438637651149459468
 MEMBER_ROLE_ID = 1438631652346695772
-AUTOBAN_CHANNEL_ID = 1438644981240692901
+AUTOBAN_CHANNEL_IDS = [1438644981240692901, 1442496641788674088]
 MASH_CHANNEL_ID = 1140354882038157393
 
 @client.event
@@ -118,7 +118,7 @@ async def on_message(message):
 
   if message.guild.id == GUILD_ID:
     # bot auto ban
-    if message.channel.id == AUTOBAN_CHANNEL_ID:
+    if message.channel.id in AUTOBAN_CHANNEL_IDS:
       (_, _, edited) = gen_llm_response('Smokie: luna, announce that you\'ve just banned ' + message.author.display_name + ' out of your discord server, for being a likely spam bot. feel free to include some spice :). They got banned for the following message: ' + message.clean_content[0:100])
       channel = client.get_channel(MASH_CHANNEL_ID)
       async with channel.typing():
