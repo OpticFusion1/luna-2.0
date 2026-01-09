@@ -38,6 +38,13 @@ class StateClass:
     # stores comma-separated strings
     self.luna_wheel_queue = []
     
+    # twitch chat message history for moderation
+    self.twitch_chat_history = ['babboon1: hey sokie', 'vespa2: you look like a potato', 'kax324: no she doesnt look like a potato lol', 'vespa2: yea she does lol', 'yax77: hey, are you playing in pohx league?']
+    # twitch moderation ai action history
+    self.twitch_moderation_history = ['banned xdc2 for swearing', 'banned ax22 for being a spam bot', 'unbanned ax22 for being a spam bot', 'banned ravs2 for being spam bot', 'timed out jansen88 for 30s for saying the banned word: hearthstone']
+    # this token will be consumed to make the next voice/text message by me an admin message
+    self.luna_admin_token = False
+
     print('[CONFIG] Initialized State.')
 
 

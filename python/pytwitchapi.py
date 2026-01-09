@@ -12,7 +12,7 @@ from enums import AZURE_SPEAKING_STYLE, VTS_EXPRESSIONS, PRIORITY_QUEUE_PRIORITI
 from vts_set_expression import vts_set_expression
 from dotenv import load_dotenv; load_dotenv()
 from utils import does_one_word_start_with_at
-from pytwitchapi_helpers import is_valid_scrabble_tile, send_ban_user_via_username_event_to_priority_queue, send_unban_last_user_event_to_priority_queue, is_twitch_message_bot_spam
+from pytwitchapi_helpers import is_valid_scrabble_tile, send_ban_user_via_username_event_to_priority_queue, send_unban_last_user_event_to_priority_queue, is_twitch_message_bot_spam, send_admin_event_to_priority_queue
 import json
 from remind_me import convert_time_hms_string_to_ms
 from datetime import datetime, timedelta
@@ -59,13 +59,20 @@ async def chat_on_ready(ready_event: EventData):
 async def chat_on_message(msg: ChatMessage):
   # print(msg.__dict__)
 
-  if (
-    '!unban' in msg.text
-    and msg.user.name == 'smokie_777'
-  ):
-    send_unban_last_user_event_to_priority_queue()
-    return
+  # early exit and special logic for certain commands by me
+  if msg.user.name == 'smokie_777':
+    if '!unban' in msg.text:
+      send_unban_last_user_event_to_priority_queue()
+      return
+    elif State.luna_admin_token:
+      send_admin_event_to_priority_queue(msg.text)
+      return
 
+  # populate logs for moderation ai
+  State.twitch_chat_history.append(f'{msg.user.name}: {msg.text}')
+  State.twitch_chat_history = State.twitch_chat_history[:10]
+
+  # autoban spam bots
   if (
     msg._parsed['tags']['first-msg'] == '1'
     and is_twitch_message_bot_spam(msg.text)
@@ -78,6 +85,7 @@ async def chat_on_message(msg: ChatMessage):
     )
     return
   
+  # auto timeout banned words
   banned_words_in_message = find_banned_words(msg.text)
   if len(banned_words_in_message):
     print(f'[PYTWITCHAPI] {msg.user.name} said a banned word, is about to be timed out! Their message: {msg.text}')

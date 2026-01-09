@@ -28,6 +28,7 @@ export const ControlPanel = () => {
   const [areLiveAnimatedEmotesOn, setAreLiveAnimatedEmotesOn] = useState(true);
   const [isDVDActive, setIsDVDActive] = useState(false);
   const [isSpeakingFast, setIsSpeakingFast] = useState(false);
+  const [isLunaAdminTokenActive, setIsLunaAdminTokenActive] = useState(false);
 
   useEffect(() => {
     if (wsRef.current) {
@@ -57,6 +58,9 @@ export const ControlPanel = () => {
       }
       if (data.hasOwnProperty("is_busy")) {
         setIsBusy(data.is_busy);
+      }
+      if (data.hasOwnProperty("luna_admin_token")) {
+        setIsLunaAdminTokenActive(data.luna_admin_token);
       }
     });
 
@@ -216,6 +220,10 @@ export const ControlPanel = () => {
     }
   };
 
+  const generateAdminToken = () => {
+    fetch_post("/generate_admin_token");
+  };
+
   const generateAudioFile = () => {
     if (textBoxInput) {
       setIsBusy(true);
@@ -290,6 +298,10 @@ export const ControlPanel = () => {
             <button onClick={sing}>Sing</button>
             <Spacer width={20} />
             <button onClick={setContext}>Set context</button>
+            <Spacer width={20} />
+            <button onClick={generateAdminToken}>
+              {isLunaAdminTokenActive ? 'Deactivate' : 'Activate'} admin token
+            </button>
             <Spacer width={20} />
             <button onClick={toggleIsSpeakingFast}>
               Toggle speaking speed: {isSpeakingFast ? 2 : 1}
