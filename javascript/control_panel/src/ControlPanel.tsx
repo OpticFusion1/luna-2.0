@@ -28,7 +28,7 @@ export const ControlPanel = () => {
   const [areLiveAnimatedEmotesOn, setAreLiveAnimatedEmotesOn] = useState(true);
   const [isDVDActive, setIsDVDActive] = useState(false);
   const [isSpeakingFast, setIsSpeakingFast] = useState(false);
-  const [isLunaAdminTokenActive, setIsLunaAdminTokenActive] = useState(false);
+  const [isAdminTokenActive, setIsAdminTokenActive] = useState(false);
 
   useEffect(() => {
     if (wsRef.current) {
@@ -59,8 +59,8 @@ export const ControlPanel = () => {
       if (data.hasOwnProperty("is_busy")) {
         setIsBusy(data.is_busy);
       }
-      if (data.hasOwnProperty("luna_admin_token")) {
-        setIsLunaAdminTokenActive(data.luna_admin_token);
+      if (data.hasOwnProperty("admin_token")) {
+        setIsAdminTokenActive(data.admin_token);
       }
     });
 
@@ -220,8 +220,10 @@ export const ControlPanel = () => {
     }
   };
 
-  const generateAdminToken = () => {
-    fetch_post("/generate_admin_token");
+  const setAdminToken = (admin_token:Boolean) => {
+    fetch_post("/set_admin_token", {
+      admin_token
+    });
   };
 
   const generateAudioFile = () => {
@@ -299,8 +301,8 @@ export const ControlPanel = () => {
             <Spacer width={20} />
             <button onClick={setContext}>Set context</button>
             <Spacer width={20} />
-            <button onClick={generateAdminToken}>
-              {isLunaAdminTokenActive ? 'Deactivate' : 'Activate'} admin token
+            <button onClick={() => setAdminToken(!isAdminTokenActive)}>
+              {isAdminTokenActive ? 'Deactivate' : 'Activate'} admin token
             </button>
             <Spacer width={20} />
             <button onClick={toggleIsSpeakingFast}>

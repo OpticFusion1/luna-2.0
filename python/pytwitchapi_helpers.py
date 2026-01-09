@@ -88,7 +88,8 @@ def send_admin_event_to_priority_queue(input_moderation_command):
       )
     elif moderation_json['classification'] == 'UNBAN':
       send_unban_last_user_event_to_priority_queue() # todo: replace with unban via username
-  State.luna_admin_token = False
+  State.admin_token = False
   InstanceContainer.ws.send(json.dumps({
-    'luna_admin_token': False
+    'admin_token': False
   }))
+  

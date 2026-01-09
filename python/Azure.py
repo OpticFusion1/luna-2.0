@@ -176,7 +176,7 @@ class Azure:
       #     'priority': PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
       #   }
       # )
-      if State.luna_admin_token:
+      if State.admin_token:
         send_admin_event_to_priority_queue(cleaned_mic_input)
       else:
         self.priority_queue.enqueue(

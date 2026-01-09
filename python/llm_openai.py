@@ -99,15 +99,7 @@ def gen_moderation_llm_response(prompt):
     moderation_json = json.loads(reply)
   except Exception as e:
     print(f"[ERROR] Failed to parse moderation AI json: {e}")
-    InstanceContainer.ws.send(json.dumps({ 'is_busy': False }))
-    State.is_busy = False
     return
-  # example_moderation_json = {
-  #   'classification': 'BAN'|'UNBAN'|'TIMEOUT'|'ERROR',
-  #   'username': String,
-  #   'reason': String,
-  #   'friendlySummary': String
-  # }
   print('[LLM] Moderation AI: ', moderation_json)
   print('[MODERATION_AI] TOTAL TOKENS: ', total_tokens)
   return moderation_json

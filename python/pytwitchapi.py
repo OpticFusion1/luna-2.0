@@ -64,7 +64,7 @@ async def chat_on_message(msg: ChatMessage):
     if '!unban' in msg.text:
       send_unban_last_user_event_to_priority_queue()
       return
-    elif State.luna_admin_token:
+    elif State.admin_token:
       send_admin_event_to_priority_queue(msg.text)
       return
 

@@ -43,7 +43,7 @@ class StateClass:
     # twitch moderation ai action history
     self.twitch_moderation_history = ['banned xdc2 for swearing', 'banned ax22 for being a spam bot', 'unbanned ax22 for being a spam bot', 'banned ravs2 for being spam bot', 'timed out jansen88 for 30s for saying the banned word: hearthstone']
     # this token will be consumed to make the next voice/text message by me an admin message
-    self.luna_admin_token = False
+    self.admin_token = False
 
     print('[CONFIG] Initialized State.')
 
