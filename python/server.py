@@ -27,6 +27,10 @@ if __name__ == '__main__':
     InstanceContainer.llm_short_term_memory.load_initial_messages(
       db_message_get_last_five()
     )
+    # optional: set llm context
+    context = ''
+    if context:
+      InstanceContainer.llm_short_term_memory.set_context(context)
   print(InstanceContainer.llm_short_term_memory.messages[1:])
 
   # run apps together. intended usage

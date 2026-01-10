@@ -13,6 +13,8 @@ from gen_edited_luna_response import gen_edited_luna_response
 from sing import sing
 from enums import PRIORITY_QUEUE_PRIORITIES
 from db import db_message_get_by_page, db_event_get_by_page
+import pyautogui
+from llm_openai import extract_text_from_screenshot
 
 @InstanceContainer.app.route('/receive_prompt', methods=['POST'])
 def _receive_prompt():
@@ -84,6 +86,24 @@ def _react_to_screen():
     )
   except Exception as e:
     log_error(e, '/react_to_screen')
+
+  return {}
+
+@InstanceContainer.app.route('/react_to_screen_text', methods=['POST'])
+def _react_to_screen_text():
+  data = request.get_json()
+
+  try:
+    screenshot = pyautogui.screenshot()
+    screenshot.save('gpt4o_extract_text_screenshot.png')
+    screen_text = extract_text_from_screenshot()
+    prompt = f'We\'re playing Divinity: Original Sin 2, and you encounter the following dialogue. What are your thoughts on it? And, what option would you choose?\n\n{screen_text}'
+    InstanceContainer.priority_queue.enqueue(
+      prompt=prompt,
+      priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_IMAGE']
+    )
+  except Exception as e:
+    log_error(e, '/react_to_screen_text')
 
   return {}
 

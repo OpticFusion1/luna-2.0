@@ -3,6 +3,7 @@ from InstanceContainer import InstanceContainer
 import os
 import openai
 from dotenv import load_dotenv; load_dotenv()
+import base64
 
 openai.api_key = os.environ['OPENAI_KEY']
 
@@ -65,3 +66,26 @@ def gen_llm_response(prompt):
     InstanceContainer.llm_short_term_memory.trim()
     
   return (prompt, raw, edited)
+
+def extract_text_from_screenshot():
+  # Read image bytes
+  with open('gpt4o_extract_text_screenshot.png', 'rb') as f:
+    img_bytes = f.read()
+  # Convert to base64 data URL
+  b64 = base64.b64encode(img_bytes).decode('utf-8')
+  data_url = f'data:image/png;base64,{b64}'
+
+  response = openai.ChatCompletion.create(
+    model='gpt-4o-mini',
+    messages=[
+      {
+        'role': 'user',
+        'content': [
+          {'type': 'text', 'text': 'Extract dialogue text from this image'},
+          {'type': 'image_url', 'image_url': {'url': data_url}},
+        ],
+      }
+    ],
+  )
+
+  return response['choices'][0]['message']['content']
