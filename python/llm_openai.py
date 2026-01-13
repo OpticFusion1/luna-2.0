@@ -95,14 +95,15 @@ def gen_moderation_llm_response(prompt):
 
   total_tokens = chat.usage.total_tokens
 
+  print('[LLM] Moderation AI: ', moderation_json)
+  print('[MODERATION_AI] TOTAL TOKENS: ', total_tokens)
+
   try:
     moderation_json = json.loads(reply)
+    return moderation_json
   except Exception as e:
     print(f"[ERROR] Failed to parse moderation AI json: {e}")
     return
-  print('[LLM] Moderation AI: ', moderation_json)
-  print('[MODERATION_AI] TOTAL TOKENS: ', total_tokens)
-  return moderation_json
 
 
 if __name__ == '__main__':

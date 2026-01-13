@@ -70,7 +70,6 @@ async def chat_on_message(msg: ChatMessage):
 
   # populate logs for moderation ai
   State.twitch_chat_history.append(f'{msg.user.name}: {msg.text}')
-  State.twitch_chat_history = State.twitch_chat_history[:10]
 
   # autoban spam bots
   if (

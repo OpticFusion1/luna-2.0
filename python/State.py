@@ -1,3 +1,5 @@
+from collections import deque
+
 # centralized state
 
 # this class uses the singleton pattern to avoid multiple instantiations
@@ -39,9 +41,15 @@ class StateClass:
     self.luna_wheel_queue = []
     
     # twitch chat message history for moderation
-    self.twitch_chat_history = ['babboon1: hey sokie', 'vespa2: you look like a potato', 'kax324: no she doesnt look like a potato lol', 'vespa2: yea she does lol', 'yax77: hey, are you playing in pohx league?']
+    self.twitch_chat_history = deque(
+      ['babboon1: hey sokie', 'vespa2: you look like a potato', 'kax324: no she doesnt look like a potato lol', 'vespa2: yea she does lol', 'yax77: hey, are you playing in pohx league?'],
+      maxlen=10
+    )
     # twitch moderation ai action history
-    self.twitch_moderation_history = ['banned xdc2 for swearing', 'banned ax22 for being a spam bot', 'unbanned ax22 for being a spam bot', 'banned ravs2 for being spam bot', 'timed out jansen88 for 30s for saying the banned word: hearthstone']
+    self.twitch_moderation_history = deque(
+      ['banned xdc2 for swearing', 'banned ax22 for being a spam bot', 'unbanned ax22 for being a spam bot', 'banned ravs2 for being spam bot', 'timed out jansen88 for 30s for saying the banned word: hearthstone'],
+      maxlen=10
+    )
     # this token will be consumed to make the next voice/text message by me an admin message
     self.admin_token = False
 
