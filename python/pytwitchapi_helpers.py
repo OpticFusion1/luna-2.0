@@ -92,4 +92,3 @@ def send_admin_event_to_priority_queue(input_moderation_command):
   InstanceContainer.ws.send(json.dumps({
     'admin_token': False
   }))
-  
