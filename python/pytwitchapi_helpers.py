@@ -1,11 +1,11 @@
 from twitchAPI.helper import first
-from InstanceContainer import InstanceContainer
 from State import State
 import os
 from dotenv import load_dotenv; load_dotenv()
 import re
 from enums import PRIORITY_QUEUE_PRIORITIES
 from llm_openai import gen_moderation_llm_response
+import json
 
 async def ban_user_via_username(username, seconds = 30, reason = 'unknown reason'):
   print(f'[PYTWITCHAPI] attempting to ban the user called: {username} for {f"{seconds}s" if seconds is not None else "indefinitely"}')
@@ -83,7 +83,7 @@ def send_admin_event_to_priority_queue(input_moderation_command):
     if moderation_json['classification'] in ['BAN', 'TIMEOUT']:
       send_ban_user_via_username_event_to_priority_queue(
         moderation_json['username'],
-        10 if moderation_json['classification'] == 'TIMEOUT' else None,
+        moderation_json['durationSeconds'],
         moderation_json['reason']
       )
     elif moderation_json['classification'] == 'UNBAN':

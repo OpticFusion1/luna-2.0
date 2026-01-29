@@ -14,6 +14,7 @@ from enums import PRIORITY_QUEUE_PRIORITIES
 from tts_helpers import get_pyaudio_output_audio_index, gen_output_audio_filename
 from constants import output_audio_device_monitor
 # https://learn.microsoft.com/en-us/azure/ai-services/speech-service/get-started-speech-to-text?tabs=windows%2Cterminal&pivots=programming-language-python
+from pytwitchapi_helpers import send_admin_event_to_priority_queue
 
 class Azure:
   # TTS
