@@ -8,7 +8,7 @@ import asyncio
 import datetime
 from dotenv import load_dotenv; load_dotenv()
 from log_error import log_error
-from llm_openai import gen_llm_response
+from llm_openai import gen_conversational_llm_response
 from find_banned_words import find_banned_words
 from discord_bot.utils import gen_timeout_timedelta, get_current_minute, get_current_hour
 
@@ -53,7 +53,7 @@ async def on_ready():
 
 @client.event
 async def on_member_join(member):
-  # (_, _, edited) = gen_llm_response(f'{member.display_name} just joined the discord server! Welcome them with a spicy welcome message!')
+  # (_, _, edited) = gen_conversational_llm_response(f'{member.display_name} just joined the discord server! Welcome them with a spicy welcome message!')
   channel = client.get_channel(GENERAL_CHANNEL_ID)
   async with channel.typing():
     await asyncio.sleep(random.uniform(2, 4))
@@ -119,7 +119,7 @@ async def on_message(message):
   if message.guild.id == GUILD_ID:
     # bot auto ban
     if message.channel.id in AUTOBAN_CHANNEL_IDS:
-      (_, _, edited) = gen_llm_response('Smokie: luna, announce that you\'ve just banned ' + message.author.display_name + ' out of your discord server, for being a likely spam bot. feel free to include some spice :). They got banned for the following message: ' + message.clean_content[0:100])
+      (_, _, edited) = gen_conversational_llm_response('Smokie: luna, announce that you\'ve just banned ' + message.author.display_name + ' out of your discord server, for being a likely spam bot. feel free to include some spice :). They got banned for the following message: ' + message.clean_content[0:100])
       channel = client.get_channel(MASH_CHANNEL_ID)
       async with channel.typing():
         await asyncio.sleep(random.uniform(2, 4))
@@ -137,7 +137,7 @@ async def on_message(message):
       try:
         timeout_timedelta = gen_timeout_timedelta('30s')
         await message.author.timeout(timeout_timedelta, reason='timed out by luna')
-        (_, _, edited) = gen_llm_response(prompt)
+        (_, _, edited) = gen_conversational_llm_response(prompt)
         await message.reply(edited)
       except Exception as e:
         log_error(e, '(discord bot)')
@@ -206,7 +206,7 @@ async def on_message(message):
               await channel.send(message_to_send)
           # luna bot create poll functionality
           elif (str(message.author) == 'smokie_777' and '@Luna !poll' in str(message.clean_content)):
-            (_, _, edited) = gen_llm_response('Generate a wild and crazy poll for the discord server, about any topic you choose! Format should be QUESTION: your question here ANSWERS: answer1,answer2,answer3. (The answers should be a comma-separated list, and you must include QUESTION: and ANSWERS: sections) Example: QUESTION: What should Smokie stream next? ANSWERS: her eating,her sleeping,her doing literally nothing,her throwing rocks at seagulls')
+            (_, _, edited) = gen_conversational_llm_response('Generate a wild and crazy poll for the discord server, about any topic you choose! Format should be QUESTION: your question here ANSWERS: answer1,answer2,answer3. (The answers should be a comma-separated list, and you must include QUESTION: and ANSWERS: sections) Example: QUESTION: What should Smokie stream next? ANSWERS: her eating,her sleeping,her doing literally nothing,her throwing rocks at seagulls')
             print('!poll attempting to create poll from input: ', edited)
             try:
               _, qa_part = edited.split('QUESTION:', 1)
@@ -223,7 +223,7 @@ async def on_message(message):
           # live-announcements stream alert notif functionality
           elif (str(message.author) == 'smokie_777' and '@Luna !live' in str(message.clean_content)):
             print('a')
-            (_, _, edited) = gen_llm_response('Smokie: Luna, we\'re about to go live on Twitch! Can you come up a spicy discord alert message to let everyone know we\'re about to go live?')
+            (_, _, edited) = gen_conversational_llm_response('Smokie: Luna, we\'re about to go live on Twitch! Can you come up a spicy discord alert message to let everyone know we\'re about to go live?')
             print('b')
             message_to_send = f'@here {edited} https://www.twitch.tv/smokie_777'
             print('c')
@@ -242,14 +242,14 @@ async def on_message(message):
             s = str(message.clean_content)
             title = s.split('|')[1].strip()
             url = s.split('|')[2].strip()
-            (_, _, edited) = gen_llm_response(f'Smokie: Luna, you just published a new video on your luna_777 youtube channel! Can you promote it to your discord server? The title is: {title}')
+            (_, _, edited) = gen_conversational_llm_response(f'Smokie: Luna, you just published a new video on your luna_777 youtube channel! Can you promote it to your discord server? The title is: {title}')
             message_to_send = f'{edited} {url}'
             channel = client.get_channel(SELF_PROMO_CHANNEL_ID)
             await channel.send(message_to_send)
           # ban functionality
           elif (str(message.author) == 'smokie_777' and '@Luna !ban ' in str(message.clean_content)):
             await message.mentions[1].ban()
-            (_, _, edited) = gen_llm_response('Smokie: luna, announce that you\'ve just banned ' + message.mentions[1].display_name + ' out of your discord server. feel free to include some spice :)')
+            (_, _, edited) = gen_conversational_llm_response('Smokie: luna, announce that you\'ve just banned ' + message.mentions[1].display_name + ' out of your discord server. feel free to include some spice :)')
             async with message.channel.typing():
               await asyncio.sleep(random.uniform(2, 4))
             await message.reply(edited)
@@ -263,7 +263,7 @@ async def on_message(message):
               timeout_timedelta = gen_timeout_timedelta(time_string)
               await message.mentions[1].timeout(timeout_timedelta, reason=reason)
               reason_string = f'Reason: {reason}. ' if reason else ''
-              (_, _, edited) = gen_llm_response(f'Smokie: luna, announce that you\'ve just timed out {message.mentions[1].display_name} for {time_string}. {reason_string}Feel free to include some spice :)')
+              (_, _, edited) = gen_conversational_llm_response(f'Smokie: luna, announce that you\'ve just timed out {message.mentions[1].display_name} for {time_string}. {reason_string}Feel free to include some spice :)')
               async with message.channel.typing():
                 await asyncio.sleep(random.uniform(2, 4))
               await message.reply(edited)
@@ -287,7 +287,7 @@ async def on_message(message):
             luna_chat_channel = client.get_channel(LUNA_CHAT_CHANNEL_ID)
             target_messsage = await luna_chat_channel.fetch_message(message_id)
             prompt = str(target_messsage.author.display_name) + ': ' + str(target_messsage.clean_content)
-            (_, _, edited) = gen_llm_response(prompt)
+            (_, _, edited) = gen_conversational_llm_response(prompt)
             async with target_messsage.channel.typing():
               await asyncio.sleep(random.uniform(2, 4))
             await target_messsage.reply(edited)
@@ -297,7 +297,7 @@ async def on_message(message):
               messages_per_minute_counter += 1
               messages_per_hour_counter += 1
             prompt = str(message.author.display_name) + ': ' + str(message.clean_content)
-            (_, _, edited) = gen_llm_response(prompt)
+            (_, _, edited) = gen_conversational_llm_response(prompt)
 
             if vc is not None and (message.channel.id == VOICE_TEXT_CHANNEL_ID or message.channel.id == LUNA_AND_SMOKIE_ONLY_CHANNEL_ID):
               await message.reply(edited)
@@ -326,7 +326,7 @@ async def on_message(message):
       and str(message.clean_content).split(':  ')[0] != '**Luna**'
     ):
       prompt = str(message.clean_content.replace('*', ''))
-      (_, _, edited) = gen_llm_response(prompt)
+      (_, _, edited) = gen_conversational_llm_response(prompt)
       (filename, _) = InstanceContainer.azure.gen_audio_file_and_subtitles(edited, None, True)
       try:
         vc.play(discord.FFmpegPCMAudio(filename))

@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv; load_dotenv()
 import re
 from enums import PRIORITY_QUEUE_PRIORITIES
+from llm_openai import gen_moderation_llm_response
 
 async def ban_user_via_username(username, seconds = 30, reason = 'unknown reason'):
   print(f'[PYTWITCHAPI] attempting to ban the user called: {username} for {f"{seconds}s" if seconds is not None else "indefinitely"}')
@@ -63,7 +64,7 @@ def send_ban_user_via_username_event_to_priority_queue(username, seconds, reason
   prompt = f'Announce that you\'ve just {"timed out" if seconds else "banned"} {username} for {f"{seconds} seconds" if seconds else ""} for {reason}'
   InstanceContainer.priority_queue.enqueue(
     prompt=prompt,
-    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_BAN_USER'],
+    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_ADMIN'],
     username_to_ban=username,
     pytwitchapi_args={ 'ban_seconds': seconds, 'ban_reason': reason }
   )
@@ -72,6 +73,22 @@ def send_unban_last_user_event_to_priority_queue():
   prompt = f'Announce that you are attempting to ban the user: {State.last_banned_user_name}'
   InstanceContainer.priority_queue.enqueue(
     prompt=prompt,
-    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_BAN_USER'],
+    priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_ADMIN'],
     username_to_unban=State.last_banned_user_name,
   )
+
+def send_admin_event_to_priority_queue(input_moderation_command):
+  moderation_json = gen_moderation_llm_response(input_moderation_command)
+  if moderation_json:
+    if moderation_json['classification'] in ['BAN', 'TIMEOUT']:
+      send_ban_user_via_username_event_to_priority_queue(
+        moderation_json['username'],
+        10 if moderation_json['classification'] == 'TIMEOUT' else None,
+        moderation_json['reason']
+      )
+    elif moderation_json['classification'] == 'UNBAN':
+      send_unban_last_user_event_to_priority_queue() # todo: replace with unban via username
+  State.admin_token = False
+  InstanceContainer.ws.send(json.dumps({
+    'admin_token': False
+  }))

@@ -177,10 +177,13 @@ class Azure:
       #     'priority': PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
       #   }
       # )
-      self.priority_queue.enqueue(
-        prompt=f'Smokie: {cleaned_mic_input}',
-        priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
-      )
+      if State.admin_token:
+        send_admin_event_to_priority_queue(cleaned_mic_input)
+      else:
+        self.priority_queue.enqueue(
+          prompt=f'Smokie: {cleaned_mic_input}',
+          priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
+        )
     elif speech_recognition_result.reason == speechsdk.ResultReason.NoMatch:
       print(f'[STT] Could not recognize speech: {speech_recognition_result.no_match_details}')
     elif speech_recognition_result.reason == speechsdk.ResultReason.Canceled:

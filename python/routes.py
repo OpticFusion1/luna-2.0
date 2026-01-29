@@ -223,6 +223,17 @@ def _toggle_is_speaking_fast():
 
   return {}
 
+@InstanceContainer.app.route('/set_admin_token', methods=['POST'])
+def _set_admin_token():
+  data = request.get_json()
+  admin_token = data['admin_token']
+  State.admin_token = admin_token
+  InstanceContainer.ws.send(json.dumps({
+    'admin_token': admin_token
+  }))
+
+  return {}
+
 @InstanceContainer.app.route('/process_luna_wheel_queue', methods=['POST'])
 def _process_luna_wheel_queue():
   data = request.get_json()

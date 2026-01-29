@@ -15,7 +15,7 @@ class TestPriorityQueue(unittest.TestCase):
     self.assertFalse(q.has_items(), 'priority queue has_items: empty queue should not have items')
 
     for priority in [
-      'PRIORITY_BAN_USER',
+      'PRIORITY_ADMIN',
       'PRIORITY_GAME_INPUT',
       'PRIORITY_IMAGE',
       'PRIORITY_MIC_INPUT',
@@ -78,12 +78,12 @@ class TestPriorityQueue(unittest.TestCase):
     self.assertEqual(
       Item.prompt,
       'foo1',
-      f'priority queue cant dequeue PRIORITY_BAN_USER (incorrect returned item)'
+      f'priority queue cant dequeue PRIORITY_ADMIN (incorrect returned item)'
     )
     self.assertEqual(
       Item.priority,
-      'PRIORITY_BAN_USER',
-      f'priority queue cant dequeue PRIORITY_BAN_USER (incorrect returned priority)'
+      'PRIORITY_ADMIN',
+      f'priority queue cant dequeue PRIORITY_ADMIN (incorrect returned priority)'
     )
 
     Item = q.dequeue()

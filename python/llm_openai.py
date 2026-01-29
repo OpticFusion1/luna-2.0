@@ -4,10 +4,12 @@ import os
 import openai
 from dotenv import load_dotenv; load_dotenv()
 import base64
+import json
+import prompts
 
 openai.api_key = os.environ['OPENAI_KEY']
 
-def gen_llm_response(prompt):
+def gen_conversational_llm_response(prompt):
   if not prompt:
     return ''
 
@@ -17,10 +19,10 @@ def gen_llm_response(prompt):
   InstanceContainer.llm_short_term_memory.add_user_message(prompt)
 
   chat = openai.ChatCompletion.create(
-    # model = os.environ['LUNA_GPT_MODEL_CHEAP'],
-    # model = os.environ['LUNA_GPT_MODEL_EXPENSIVE'],
-    model = os.environ['LUNA_GPT_MODEL_FINETUNED'],
-    # model = os.environ['LUNA_GPT_MODEL_FINETUNED_2'],
+    # model=os.environ['LUNA_GPT_MODEL_CHEAP'],
+    # model=os.environ['LUNA_GPT_MODEL_EXPENSIVE'],
+    model=os.environ['LUNA_GPT_MODEL_FINETUNED'],
+    # model=os.environ['LUNA_GPT_MODEL_FINETUNED_2'],
     messages=InstanceContainer.llm_short_term_memory.messages,
     temperature=float(os.environ['LUNA_GPT_TEMPERATURE']),
     # temperature=2,
@@ -89,3 +91,46 @@ def extract_text_from_screenshot():
   )
 
   return response['choices'][0]['message']['content']
+
+
+def gen_moderation_llm_response(prompt):
+  chat = openai.ChatCompletion.create(
+    model='gpt-4o-mini',
+    messages=[
+      {
+        'role': 'system',
+        'content': prompts.system_moderation
+      },
+      {
+        'role': 'user',
+        'content': f'Last few messages of twitch chat (most recent is last): {State.twitch_chat_history}'
+      },
+      {
+        'role': 'system',
+        'content': f'Last few moderation actions performed by you (most recent is last): {State.twitch_moderation_history}'
+      },
+      {
+        'role': 'user', 
+        'content': prompt
+      }
+    ],
+    max_tokens=int(os.environ['LUNA_GPT_MAX_TOKENS'])
+  )
+
+  reply = chat.choices[0].message.content
+
+  total_tokens = chat.usage.total_tokens
+
+  print('[LLM] Moderation AI: ', moderation_json)
+  print('[MODERATION_AI] TOTAL TOKENS: ', total_tokens)
+
+  try:
+    moderation_json = json.loads(reply)
+    return moderation_json
+  except Exception as e:
+    print(f"[ERROR] Failed to parse moderation AI json: {e}")
+    return
+
+
+if __name__ == '__main__':
+  gen_moderation_llm_response('hey luna, can you ban the user that was talking about potatoes?')
