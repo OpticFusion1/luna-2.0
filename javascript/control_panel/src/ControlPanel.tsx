@@ -103,6 +103,11 @@ export const ControlPanel = () => {
     fetch_post("/react_to_screen", {});
   };
 
+  const reactToScreenText = () => {
+    setIsBusy(true);
+    fetch_post("/react_to_screen_text", {});
+  };
+
   const eraseMemory = () => {
     fetch_post("/erase_memory");
   };
@@ -282,6 +287,8 @@ export const ControlPanel = () => {
             <button onClick={lunaReadTextBox}>Read</button>
             <Spacer width={20} />
             <button onClick={reactToScreen}>React to screen</button>
+            <Spacer width={20} />
+            <button onClick={reactToScreenText}>React to screen text</button>
             <Spacer width={20} />
             <button onClick={eraseMemory}>Clear memory</button>
             <Spacer width={20} />

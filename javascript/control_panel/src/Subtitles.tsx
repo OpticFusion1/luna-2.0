@@ -17,41 +17,45 @@ export const Subtitles = ({
   useEffect(() => {
     let subtitleInterval:number | NodeJS.Timer;
     let removeSubtitleTimeout:number | NodeJS.Timer;
+    let startSubtitlesTimeout:number | NodeJS.Timer;
 
-    if (!subtitles.length) {
-      setSubtitleText('');
-    } else if (subtitles.length === 1) {
-      setSubtitleText(text);
-      removeSubtitleTimeout = setTimeout(() => {
+    startSubtitlesTimeout = setTimeout(() => {
+      if (!subtitles.length) {
         setSubtitleText('');
-      }, 5000);
-    } else {
-      const textOffsetAdjustment = subtitles[0].text_offset;
-      let stopwatch = 0;
-      subtitleInterval = setInterval(() => {
-        if (stopwatch > subtitles[subtitles.length - 1].audio_offset) {
-          setSubtitleText(text);
-          clearInterval(subtitleInterval);
-          removeSubtitleTimeout = setTimeout(() => {
-            setSubtitleText('');
-          }, 5000);
-        }
-        for (let i = 0; i < subtitles.length; i++) {
-          if (subtitles[i].audio_offset >= stopwatch) {
-            setSubtitleText(
-              (i >= 1 && subtitles[i - 1].text) // custom logic for hardcoded song subtitles
-              || text.slice(0, subtitles[i].text_offset - textOffsetAdjustment) // normal logic
-            );
-            stopwatch += 200;
-            break;
+      } else if (subtitles.length === 1) {
+        setSubtitleText(text);
+        removeSubtitleTimeout = setTimeout(() => {
+          setSubtitleText('');
+        }, 5000);
+      } else {
+        const textOffsetAdjustment = subtitles[0].text_offset;
+        let stopwatch = 0;
+        subtitleInterval = setInterval(() => {
+          if (stopwatch > subtitles[subtitles.length - 1].audio_offset) {
+            setSubtitleText(text);
+            clearInterval(subtitleInterval);
+            removeSubtitleTimeout = setTimeout(() => {
+              setSubtitleText('');
+            }, 5000);
           }
-        }
-      }, 200);
-    }
+          for (let i = 0; i < subtitles.length; i++) {
+            if (subtitles[i].audio_offset >= stopwatch) {
+              setSubtitleText(
+                (i >= 1 && subtitles[i - 1].text) // custom logic for hardcoded song subtitles
+                || text.slice(0, subtitles[i].text_offset - textOffsetAdjustment) // normal logic
+              );
+              stopwatch += 200;
+              break;
+            }
+          }
+        }, 200);
+      }
+    }, 0); // initial delay before subtitles start playing, to sync up with vtuber mouth
 
     return () => {
       clearInterval(subtitleInterval);
       clearTimeout(removeSubtitleTimeout);
+      clearTimeout(startSubtitlesTimeout);
     };
   }, [text, subtitles]);
 

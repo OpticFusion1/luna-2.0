@@ -44,3 +44,6 @@ booba_emotes = [
   'mathil',
   'WELCUM'
 ]
+
+output_audio_device_monitor = 'SPEAKERS'
+# output_audio_device_monitor = 'HEADPHONES'
