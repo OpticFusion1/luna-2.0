@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from eleven_labs_tts import eleven_labs_tts_speak
 from InstanceContainer import InstanceContainer
 from State import State
+from play_sound_file_locally import play_sound_file_locally
 
 def execute_action(Prompt):
   State.is_busy = True
@@ -18,6 +19,10 @@ def execute_action(Prompt):
   if Prompt.is_eleven_labs:
     # bypass the normal flow to read eleven labs tts
     eleven_labs_tts_speak(Prompt.prompt)
+  elif Prompt.is_sound_effect:
+    # bypass the normal flow to play a sound effect
+    if Prompt.prompt == 'xdc':
+      play_sound_file_locally('./output_audio_files/Maven_moan1.ogg')
   else:
     start_time = time()
     print('executing action', Prompt)
