@@ -8,13 +8,11 @@ from db import db_message_insert_one
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from eleven_labs_tts import eleven_labs_tts_speak
-from InstanceContainer import InstanceContainer
-from State import State
 from play_sound_file_locally import play_sound_file_locally
 
-def execute_action(Prompt):
-  State.is_busy = True
-  InstanceContainer.ws.send(json.dumps({ 'is_busy': True }))
+def execute_action(container, Prompt):
+  container.is_busy = True
+  container.ws.send(json.dumps({ 'is_busy': True }))
 
   if Prompt.is_eleven_labs:
     # bypass the normal flow to read eleven labs tts
@@ -26,19 +24,19 @@ def execute_action(Prompt):
   else:
     start_time = time()
     print('executing action', Prompt)
-    (prompt, raw, edited) = gen_llm_response(Prompt.prompt)
+    (prompt, raw, edited) = gen_llm_response(container, Prompt.prompt)
     latency_llm = round((time() - start_time), 3)
 
     print('[LLM] Prompt: ', prompt)
     print('[LLM] Raw: ', raw)
     print('[LLM] Edited: ', edited)
 
-    InstanceContainer.ws.send(json.dumps({
+    container.ws.send(json.dumps({
       'prompt': prompt, 'raw': raw, 'edited': edited, 'latency_llm': f'{latency_llm}s'
     }))
 
     start_time = time()
-    (output_filename, subtitles) = InstanceContainer.azure.gen_audio_file_and_subtitles(
+    (output_filename, subtitles) = container.azure.gen_audio_file_and_subtitles(
       edited,
       Prompt.azure_speaking_style,
       Prompt.should_generate_audio_file_only,
@@ -46,12 +44,12 @@ def execute_action(Prompt):
     )
     if not Prompt.should_generate_audio_file_only:
       latency_tts = round((time() - start_time), 3)
-      with InstanceContainer.app.app_context():
+      with container.app.app_context():
         db_message_insert_one(prompt=prompt, response=edited, latency_llm=latency_llm, latency_tts=latency_tts)
 
       print(f'[LLM] LLM: {latency_llm}s | TTS: {latency_tts}s')
 
-      InstanceContainer.ws.send(json.dumps({
+      container.ws.send(json.dumps({
         'edited': edited, 'subtitles': subtitles, 'latency_tts': f'{latency_tts}s'
       }))
 
@@ -64,12 +62,13 @@ def execute_action(Prompt):
             pool,
             asyncio.run,
             ban_user_via_username(
+              container,
               Prompt.username_to_ban,
               Prompt.pytwitchapi_args.get('ban_seconds', None),
               Prompt.pytwitchapi_args.get('ban_reason', '')
             )
           )
-        InstanceContainer.ws.send(json.dumps({
+        container.ws.send(json.dumps({
           'twitch_event': {
             'event': TWITCH_EVENTS['BAN'],
             'username': Prompt.username_to_ban,
@@ -85,9 +84,9 @@ def execute_action(Prompt):
           loop.run_in_executor(
             pool,
             asyncio.run,
-            unban_last_banned_user()
+            unban_last_banned_user(container)
           )
-        InstanceContainer.ws.send(json.dumps({
+        container.ws.send(json.dumps({
           'twitch_event': {
             'event': TWITCH_EVENTS['BAN'],
             'username': Prompt.username_to_unban,
@@ -95,10 +94,10 @@ def execute_action(Prompt):
           }
         }))
 
-      InstanceContainer.azure.speak(output_filename)
+      container.azure.speak(output_filename)
 
       if Prompt.utterance_id:
-        InstanceContainer.ws.send(json.dumps({ 'utterance_id': Prompt.utterance_id }))
+        container.ws.send(json.dumps({ 'utterance_id': Prompt.utterance_id }))
 
       if '!timeout' in edited:
         username_to_timeout = extract_username_to_timeout_from_string(edited)
@@ -110,14 +109,14 @@ def execute_action(Prompt):
             loop.run_in_executor(
               pool,
               asyncio.run,
-              ban_user_via_username(username_to_timeout, 30, 'timed out by luna')
+              ban_user_via_username(container, username_to_timeout, 30, 'timed out by luna')
             )
 
     if (
       Prompt.priority != PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
       and Prompt.priority != PRIORITY_QUEUE_PRIORITIES['PRIORITY_COLLAB_MIC_INPUT']
     ):
-      sleep(State.ai_response_delay)
+      sleep(container.ai_response_delay)
 
-  InstanceContainer.ws.send(json.dumps({ 'is_busy': False }))
-  State.is_busy = False
+  container.ws.send(json.dumps({ 'is_busy': False }))
+  container.is_busy = False
