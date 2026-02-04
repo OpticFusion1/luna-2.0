@@ -9,6 +9,7 @@ class Prompt:
     username_to_ban = None,
     username_to_unban = None,
     is_eleven_labs = False,
+    is_sound_effect = False,
     should_generate_audio_file_only = False,
     pytwitchapi_args = {}
   ):
@@ -20,6 +21,7 @@ class Prompt:
     self.username_to_ban = username_to_ban
     self.username_to_unban = username_to_unban
     self.is_eleven_labs = is_eleven_labs
+    self.is_sound_effect = is_sound_effect
     self.should_generate_audio_file_only = should_generate_audio_file_only
     self.pytwitchapi_args = pytwitchapi_args
     

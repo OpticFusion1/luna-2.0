@@ -22,6 +22,7 @@ class PriorityQueue:
     username_to_ban = None,
     username_to_unban = None,
     is_eleven_labs = False,
+    is_sound_effect = False,
     should_generate_audio_file_only = False,
     pytwitchapi_args = {},
   ):
@@ -35,6 +36,7 @@ class PriorityQueue:
         username_to_ban=username_to_ban,
         username_to_unban=username_to_unban,
         is_eleven_labs=is_eleven_labs,
+        is_sound_effect=is_sound_effect,
         should_generate_audio_file_only=should_generate_audio_file_only,
         pytwitchapi_args=pytwitchapi_args
       )

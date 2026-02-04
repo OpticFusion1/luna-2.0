@@ -111,6 +111,12 @@ async def chat_on_message(msg: ChatMessage):
     }
   }))
 
+  if 'xdc' in msg.text.split(' '):
+    InstanceContainer.priority_queue.enqueue(
+      prompt='xdc',
+      priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE'],
+      is_sound_effect=True
+    )
 
   prompt = f'{msg.user.name}: {msg.text}'
   is_at_luna = '@luna' in msg.text.lower() or '@hellfire' in msg.text.lower()
@@ -172,7 +178,7 @@ async def chat_on_command_filter(cmd: ChatCommand):
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!filter')
 
 async def chat_on_command_build(cmd: ChatCommand):
-  await cmd.reply('https://www.youtube.com/watch?v=qBYLl_eUIbc')
+  await cmd.reply('https://pobb.in/hc0GZIij9-Xt')
   with InstanceContainer.app.app_context():
     db_event_insert_one(type=TWITCH_EVENT_TYPE['CHAT_COMMAND'], event='!build')
 
