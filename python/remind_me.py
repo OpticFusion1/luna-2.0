@@ -27,7 +27,7 @@ async def remind_me_async_loop(container):
     await asyncio.sleep(10)
     now = datetime.now()
     due = []
-    with container.remind_me_lock:
+    with container.remind_lock:
       q = container.remind_me_prompts_and_datetime_queue
       keep = []
       for rp, rd in q:

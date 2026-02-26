@@ -40,7 +40,7 @@ if __name__ == '__main__':
     r_ctrl_stt_run
   ]
   
-  threads = [Thread(target=fn, args=(container,), daemon=True) for fn in microservices]
+  threads = [Thread(target=fn, args=(container,)) for fn in microservices]
 
   for t in threads: t.start()
   for t in threads: t.join()
