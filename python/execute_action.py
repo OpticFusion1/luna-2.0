@@ -1,4 +1,4 @@
-from llm_openai import gen_llm_response
+from llm_openai import gen_conversational_llm_response
 import json
 from time import sleep, time
 from enums import PRIORITY_QUEUE_PRIORITIES, TWITCH_EVENTS
@@ -24,7 +24,7 @@ def execute_action(container, Prompt):
   else:
     start_time = time()
     print('executing action', Prompt)
-    (prompt, raw, edited) = gen_llm_response(container, Prompt.prompt)
+    (prompt, raw, edited) = gen_conversational_llm_response(container, Prompt.prompt)
     latency_llm = round((time() - start_time), 3)
 
     print('[LLM] Prompt: ', prompt)
@@ -54,6 +54,9 @@ def execute_action(container, Prompt):
       }))
 
       if Prompt.username_to_ban:
+        ban_username = Prompt.username_to_ban
+        ban_seconds = Prompt.pytwitchapi_args.get('ban_seconds', None)
+        ban_reason = Prompt.pytwitchapi_args.get('ban_reason', '')
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         with ThreadPoolExecutor() as pool:
@@ -61,13 +64,12 @@ def execute_action(container, Prompt):
           loop.run_in_executor(
             pool,
             asyncio.run,
-            ban_user_via_username(
-              container,
-              Prompt.username_to_ban,
-              Prompt.pytwitchapi_args.get('ban_seconds', None),
-              Prompt.pytwitchapi_args.get('ban_reason', '')
-            )
+            ban_user_via_username(container, ban_username, ban_seconds, ban_reason)
           )
+        container.twitch_moderation_history.append(
+          f'timed out {ban_username} for {ban_seconds}s for reason: {ban_reason}' if ban_seconds else
+          f'banned {ban_username} for reason: {ban_reason}'
+        )
         container.ws.send(json.dumps({
           'twitch_event': {
             'event': TWITCH_EVENTS['BAN'],
@@ -86,6 +88,7 @@ def execute_action(container, Prompt):
             asyncio.run,
             unban_last_banned_user(container)
           )
+        container.twitch_moderation_history.append(f'unbanned {Prompt.username_to_unban}')
         container.ws.send(json.dumps({
           'twitch_event': {
             'event': TWITCH_EVENTS['BAN'],
@@ -100,6 +103,8 @@ def execute_action(container, Prompt):
         container.ws.send(json.dumps({ 'utterance_id': Prompt.utterance_id }))
 
       if '!timeout' in edited:
+        container.is_busy = False
+        return # HOTFIX: NEED TO FIX THIS LATER
         username_to_timeout = extract_username_to_timeout_from_string(edited)
         if username_to_timeout:
           loop = asyncio.new_event_loop()

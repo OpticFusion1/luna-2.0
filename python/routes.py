@@ -11,6 +11,8 @@ from gen_edited_luna_response import gen_edited_luna_response
 from sing import sing
 from enums import PRIORITY_QUEUE_PRIORITIES
 from db import db_message_get_by_page, db_event_get_by_page
+import pyautogui
+from llm_openai import extract_text_from_screenshot
 
 bp = Blueprint("api", __name__)
 
@@ -85,6 +87,22 @@ def register(container):
       )
     except Exception as e:
       log_error(e, '/react_to_screen')
+
+  @bp.route('/react_to_screen_text', methods=['POST'])
+  def _react_to_screen_text():
+    data = request.get_json()
+
+    try:
+      screenshot = pyautogui.screenshot()
+      screenshot.save('gpt4o_extract_text_screenshot.png')
+      screen_text = extract_text_from_screenshot()
+      prompt = f'We\'re playing Divinity: Original Sin 2, and you encounter the following dialogue. What are your thoughts on it? And, what option would you choose?\n\n{screen_text}'
+      container.priority_queue.enqueue(
+        prompt=prompt,
+        priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_IMAGE']
+      )
+    except Exception as e:
+      log_error(e, '/react_to_screen_text')
 
     return {}
 
@@ -218,5 +236,16 @@ def register(container):
       }))
 
     return {}
-  
+
+  @bp.route('/set_admin_token', methods=['POST'])
+  def _set_admin_token():
+    data = request.get_json()
+    admin_token = data['admin_token']
+    container.admin_token = admin_token
+    container.ws.send(json.dumps({
+      'admin_token': admin_token
+    }))
+
+    return {}
+
   container.app.register_blueprint(bp)

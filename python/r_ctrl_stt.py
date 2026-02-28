@@ -5,6 +5,10 @@ def r_ctrl_stt_run(container):
     if key == Key.ctrl_r:
       container.azure.is_listening = True
       container.azure.recognize_from_microphone(container)
+    elif key == Key.pause:
+      container.admin_token = True
+      container.azure.is_listening = True
+      container.azure.recognize_from_microphone(container)
 
   def pynput_on_release(key):
     if key == Key.pause:

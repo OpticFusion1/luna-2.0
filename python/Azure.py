@@ -11,12 +11,14 @@ import numpy as np
 from dotenv import load_dotenv; load_dotenv()
 from enums import PRIORITY_QUEUE_PRIORITIES
 from tts_helpers import get_pyaudio_output_audio_index, gen_output_audio_filename
+from constants import output_audio_device_monitor
 # https://learn.microsoft.com/en-us/azure/ai-services/speech-service/get-started-speech-to-text?tabs=windows%2Cterminal&pivots=programming-language-python
+from pytwitchapi_helpers import send_admin_event_to_priority_queue
 
 class Azure:
   # TTS
   OUTPUT_AUDIO_INDEX_PROD = get_pyaudio_output_audio_index()
-  OUTPUT_AUDIO_INDEX_MONITOR = get_pyaudio_output_audio_index('SPEAKERS')
+  OUTPUT_AUDIO_INDEX_MONITOR = get_pyaudio_output_audio_index(output_audio_device_monitor)
   AZURE_POST_URL = f'https://{os.environ["SPEECH_REGION"]}.tts.speech.microsoft.com/cognitiveservices/v1'
   AZURE_POST_HEADERS = {
     'Ocp-Apim-Subscription-Key': os.environ['SPEECH_KEY'],
@@ -142,7 +144,7 @@ class Azure:
       if self.tts_green_light:
         output_stream.write(data)
         data_numpy_array = np.frombuffer(data, dtype=np.int16)
-        data_numpy_array = (data_numpy_array * 0.07).astype(np.int16)
+        data_numpy_array = (data_numpy_array * (0.07 if output_audio_device_monitor == 'SPEAKERS' else 0.25)).astype(np.int16)
         monitor_stream.write(data_numpy_array.tobytes())
         data = wf.readframes(chunk)
       else:
@@ -176,10 +178,13 @@ class Azure:
       #     'priority': PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
       #   }
       # )
-      container.priority_queue.enqueue(
-        prompt=f'Smokie: {cleaned_mic_input}',
-        priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
-      )
+      if container.admin_token:
+        send_admin_event_to_priority_queue(container, cleaned_mic_input)
+      else:
+        container.priority_queue.enqueue(
+          prompt=f'Smokie: {cleaned_mic_input}',
+          priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
+        )
     elif speech_recognition_result.reason == speechsdk.ResultReason.NoMatch:
       print(f'[STT] Could not recognize speech: {speech_recognition_result.no_match_details}')
     elif speech_recognition_result.reason == speechsdk.ResultReason.Canceled:

@@ -28,6 +28,7 @@ export const ControlPanel = () => {
   const [areLiveAnimatedEmotesOn, setAreLiveAnimatedEmotesOn] = useState(true);
   const [isDVDActive, setIsDVDActive] = useState(false);
   const [isSpeakingFast, setIsSpeakingFast] = useState(false);
+  const [isAdminTokenActive, setIsAdminTokenActive] = useState(false);
 
   useEffect(() => {
     if (wsRef.current) {
@@ -57,6 +58,9 @@ export const ControlPanel = () => {
       }
       if (data.hasOwnProperty("is_busy")) {
         setIsBusy(data.is_busy);
+      }
+      if (data.hasOwnProperty("admin_token")) {
+        setIsAdminTokenActive(data.admin_token);
       }
     });
 
@@ -101,6 +105,11 @@ export const ControlPanel = () => {
   const reactToScreen = () => {
     setIsBusy(true);
     fetch_post("/react_to_screen", {});
+  };
+
+  const reactToScreenText = () => {
+    setIsBusy(true);
+    fetch_post("/react_to_screen_text", {});
   };
 
   const eraseMemory = () => {
@@ -216,6 +225,12 @@ export const ControlPanel = () => {
     }
   };
 
+  const setAdminToken = (admin_token:Boolean) => {
+    fetch_post("/set_admin_token", {
+      admin_token
+    });
+  };
+
   const generateAudioFile = () => {
     if (textBoxInput) {
       setIsBusy(true);
@@ -283,6 +298,8 @@ export const ControlPanel = () => {
             <Spacer width={20} />
             <button onClick={reactToScreen}>React to screen</button>
             <Spacer width={20} />
+            <button onClick={reactToScreenText}>React to screen text</button>
+            <Spacer width={20} />
             <button onClick={eraseMemory}>Clear memory</button>
             <Spacer width={20} />
             <button onClick={cancelSpeech}>Cancel speech</button>
@@ -290,6 +307,10 @@ export const ControlPanel = () => {
             <button onClick={sing}>Sing</button>
             <Spacer width={20} />
             <button onClick={setContext}>Set context</button>
+            <Spacer width={20} />
+            <button onClick={() => setAdminToken(!isAdminTokenActive)}>
+              {isAdminTokenActive ? 'Deactivate' : 'Activate'} admin token
+            </button>
             <Spacer width={20} />
             <button onClick={toggleIsSpeakingFast}>
               Toggle speaking speed: {isSpeakingFast ? 2 : 1}

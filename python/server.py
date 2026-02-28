@@ -23,9 +23,13 @@ if __name__ == '__main__':
     container.llm_short_term_memory.load_initial_messages(
       db_message_get_last_five()
     )
+    # optional: set llm context
+    context = ''
+    if context:
+      container.llm_short_term_memory.set_context(context)
+      print(container.llm_short_term_memory.messages[1:])
     db.create_all()
-  routes.register(container) # route registration should be last in instantiation order
-  print(container.llm_short_term_memory.messages[1:])
+    routes.register(container) # route registration should be last in instantiation order
 
   def flask_run(container):
     container.app.run(debug=False, port=5001);

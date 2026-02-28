@@ -10,7 +10,7 @@ from enums import AZURE_SPEAKING_STYLE, VTS_EXPRESSIONS, PRIORITY_QUEUE_PRIORITI
 from vts_set_expression import vts_set_expression
 from dotenv import load_dotenv; load_dotenv()
 from utils import does_one_word_start_with_at
-from pytwitchapi_helpers import send_ban_user_via_username_event_to_priority_queue, send_unban_last_user_event_to_priority_queue, is_twitch_message_bot_spam
+from pytwitchapi_helpers import send_ban_user_via_username_event_to_priority_queue, send_unban_last_user_event_to_priority_queue, is_twitch_message_bot_spam, send_admin_event_to_priority_queue
 import json
 from remind_me import convert_time_hms_string_to_ms
 from datetime import datetime, timedelta
@@ -55,12 +55,20 @@ async def run_pytwitchapi(container):
 
   async def chat_on_message(msg: ChatMessage):
     # print(msg.__dict__)
-    if (
-      '!unban' in msg.text
-      and msg.user.name == 'smokie_777'
-    ):
-      send_unban_last_user_event_to_priority_queue(container)
-      return
+
+    # early exit and special logic for certain commands by me
+    if msg.user.name == 'smokie_777':
+      if '!unban' in msg.text:
+        send_unban_last_user_event_to_priority_queue(container)
+        return
+      elif container.admin_token:
+        send_admin_event_to_priority_queue(msg.text)
+        return
+
+    # populate logs for moderation ai
+    container.twitch_chat_history.append(f'{msg.user.name}: {msg.text}')
+
+    # autoban spam bots
     if (
       msg._parsed['tags']['first-msg'] == '1'
       and is_twitch_message_bot_spam(msg.text)
@@ -73,6 +81,8 @@ async def run_pytwitchapi(container):
         'being a spam bot'
       )
       return
+    
+    # auto timeout banned words
     banned_words_in_message = find_banned_words(msg.text)
     if len(banned_words_in_message):
       print(f'[PYTWITCHAPI] {msg.user.name} said a banned word, is about to be timed out! Their message: {msg.text}')
@@ -80,9 +90,10 @@ async def run_pytwitchapi(container):
         container,
         msg.user.name,
         10,
-        f'saying a banned word in chat: {banned_words_in_message[0]} (mention the banned word in your response!)'
+        f'they said a banned word in chat: {banned_words_in_message[0]} (mention the banned word in your response!)'
       )
       return
+
     # bits are handled in eventsub, so we ignore bit messages here
     if (
       msg.bits
@@ -90,6 +101,7 @@ async def run_pytwitchapi(container):
       or RANT_PREFIX_TEXT in msg.text # channel point redemption will send a normal message too
     ):
       return
+
     container.ws.send(json.dumps({
       'twitch_event': {
         'event': TWITCH_EVENTS['MESSAGE'],
@@ -97,14 +109,17 @@ async def run_pytwitchapi(container):
         'value': msg.text
       }
     }))
+
     if 'xdc' in msg.text.split(' '):
       container.priority_queue.enqueue(
         prompt='xdc',
         priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE'],
         is_sound_effect=True
       )
+
     prompt = f'{msg.user.name}: {msg.text}'
     is_at_luna = '@luna' in msg.text.lower() or '@hellfire' in msg.text.lower()
+
     if (
       container.is_twitch_chat_react_on
       and msg.text[0] != '!'
@@ -122,29 +137,79 @@ async def run_pytwitchapi(container):
         acknowledgement_prompt = (
           f'say, "I will remind {msg.user.name} to "{reminder_action}" in {args[0]}."'
         )
-        reminder_prompt = f'say to {msg.user.name} that this is their reminder to "{reminder_action}".'
-        with container.remind_lock:
-          container.remind_me_prompts_and_datetime_queue.append((
-            reminder_prompt,
-            datetime.now() + timedelta(milliseconds=convert_time_hms_string_to_ms(args[0]))
+        return
+      banned_words_in_message = find_banned_words(msg.text)
+      if len(banned_words_in_message):
+        print(f'[PYTWITCHAPI] {msg.user.name} said a banned word, is about to be timed out! Their message: {msg.text}')
+        send_ban_user_via_username_event_to_priority_queue(
+          container,
+          msg.user.name,
+          10,
+          f'they said a banned word in chat: {banned_words_in_message[0]} (mention the banned word in your response!)'
+        )
+        return
+      # bits are handled in eventsub, so we ignore bit messages here
+      if (
+        msg.bits
+        or WHISPER_PREFIX_TEXT in msg.text # channel point redemption will send a normal message too
+        or RANT_PREFIX_TEXT in msg.text # channel point redemption will send a normal message too
+      ):
+        return
+      container.ws.send(json.dumps({
+        'twitch_event': {
+          'event': TWITCH_EVENTS['MESSAGE'],
+          'username': msg.user.name,
+          'value': msg.text
+        }
+      }))
+      if 'xdc' in msg.text.split(' '):
+        container.priority_queue.enqueue(
+          prompt='xdc',
+          priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_EVENTSUB_EVENTS_QUEUE'],
+          is_sound_effect=True
+        )
+      prompt = f'{msg.user.name}: {msg.text}'
+      is_at_luna = '@luna' in msg.text.lower() or '@hellfire' in msg.text.lower()
+      if (
+        container.is_twitch_chat_react_on
+        and msg.text[0] != '!'
+        and msg.user.name != 'Streamlabs'
+        and (
+          (container.is_quiet_mode_on and is_at_luna)
+          or (not container.is_quiet_mode_on and (
+            is_at_luna or not does_one_word_start_with_at(msg.text.lower().split(' '))
           ))
-        with container.app.app_context():
-          db_event_insert_one(
-            type=TWITCH_EVENT_TYPE['CHAT_COMMAND'],
-            event='!remindme',
-            body=reminder_action
+        )
+      ):
+        if '@luna !remindme ' in msg.text.lower():
+          args = msg.text.lower().replace('@luna !remindme ', '').split(' ')
+          reminder_action = " ".join(args[1:])
+          acknowledgement_prompt = (
+            f'say, "I will remind {msg.user.name} to "{reminder_action}" in {args[0]}."'
           )
-        container.priority_queue.enqueue(
-          prompt=acknowledgement_prompt,
-          priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_REMIND_ME']
-        )
-      else:
-        is_speaking_fast = random.random() > 0.75
-        container.priority_queue.enqueue(
-          prompt=prompt,
-          priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_TWITCH_CHAT_QUEUE'],
-          is_speaking_fast=is_speaking_fast
-        )
+          reminder_prompt = f'say to {msg.user.name} that this is their reminder to "{reminder_action}".'
+          with container.remind_lock:
+            container.remind_me_prompts_and_datetime_queue.append((
+              reminder_prompt,
+              datetime.now() + timedelta(milliseconds=convert_time_hms_string_to_ms(args[0]))
+            ))
+          with container.app.app_context():
+            db_event_insert_one(
+              type=TWITCH_EVENT_TYPE['CHAT_COMMAND'],
+              event='!remindme',
+              body=reminder_action
+            )
+          container.priority_queue.enqueue(
+            prompt=acknowledgement_prompt,
+            priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_REMIND_ME']
+          )
+        else:
+          is_speaking_fast = random.random() > 0.75
+          container.priority_queue.enqueue(
+            prompt=prompt,
+            priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_TWITCH_CHAT_QUEUE'],
+            is_speaking_fast=is_speaking_fast
+          )
 
   async def chat_on_command_discord(cmd: ChatCommand):
     await cmd.reply('https://discord.gg/cxTHwepMTb')
@@ -307,6 +372,8 @@ async def run_pytwitchapi(container):
         )
       vts_set_expression(VTS_EXPRESSIONS['BROWN_HAIR'])
     elif title == 'smokie tts' and not container.is_singing:
+      container.is_busy = False
+      return # TEMPORARY PATCH DUE TO REMOVED TTS
       with container.app.app_context():
         db_event_insert_one(
           type=TWITCH_EVENT_TYPE['CHANNEL_POINT_REDEMPTION'],
