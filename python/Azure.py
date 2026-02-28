@@ -1,4 +1,3 @@
-from State import State
 import os
 import requests
 from pydub import AudioSegment
@@ -48,10 +47,11 @@ class Azure:
     audio_config=AUDIO_CONFIG
   )
 
-  def __init__(self, priority_queue):
-    self.priority_queue = priority_queue # reference to InstanceContainer.priority_queue
+  def __init__(self):
     self.word_offsets = []
     self.is_listening = False
+    self.is_speaking_fast = False
+    self.tts_green_light = True # make this false for a couple seconds to terminate the audio playing loop.
 
     self.SPEECHSDK_SPEECH_SYNTHESIZER.synthesis_word_boundary.connect(
       lambda evt: self.word_offsets.append({
@@ -99,7 +99,7 @@ class Azure:
     # 2. replace <prosody /> with %PROSODY_SSML% 
     # 3. refactor it to be one line
     # 4. wrap it in single quotes '', and put it in .env
-    prosody_ssml = ('<prosody rate="+150.00%" pitch="+10.00%">' + emoji_processed_text + '</prosody>') if (State.is_speaking_fast or is_speaking_fast) else ('<prosody pitch="+10.00%">' + emoji_processed_text + '</prosody>') 
+    prosody_ssml = ('<prosody rate="+150.00%" pitch="+10.00%">' + emoji_processed_text + '</prosody>') if (self.is_speaking_fast or is_speaking_fast) else ('<prosody pitch="+10.00%">' + emoji_processed_text + '</prosody>') 
     # prosody_ssml = '<prosody pitch="+10.00%"><say-as interpret-as="message">' + emoji_processed_text + '</say-as></prosody>'
     if speaking_style:
       prosody_ssml = '<mstts:express-as style="' + speaking_style + '">' + prosody_ssml + '</mstts:express-as>'
@@ -141,7 +141,7 @@ class Azure:
     )
     data = wf.readframes(chunk)
     while len(data) > 0:
-      if State.tts_green_light:
+      if self.tts_green_light:
         output_stream.write(data)
         data_numpy_array = np.frombuffer(data, dtype=np.int16)
         data_numpy_array = (data_numpy_array * (0.07 if output_audio_device_monitor == 'SPEAKERS' else 0.25)).astype(np.int16)
@@ -153,7 +153,7 @@ class Azure:
     monitor_stream.close()
     p.terminate()
   
-  def recognize_from_microphone(self):
+  def recognize_from_microphone(self, container):
     if not self.is_listening:
       return
     
@@ -178,10 +178,10 @@ class Azure:
       #     'priority': PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
       #   }
       # )
-      if State.admin_token:
-        send_admin_event_to_priority_queue(cleaned_mic_input)
+      if container.admin_token:
+        send_admin_event_to_priority_queue(container, cleaned_mic_input)
       else:
-        self.priority_queue.enqueue(
+        container.priority_queue.enqueue(
           prompt=f'Smokie: {cleaned_mic_input}',
           priority=PRIORITY_QUEUE_PRIORITIES['PRIORITY_MIC_INPUT']
         )

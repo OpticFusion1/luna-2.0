@@ -47,3 +47,5 @@ booba_emotes = [
 
 output_audio_device_monitor = 'SPEAKERS'
 # output_audio_device_monitor = 'HEADPHONES'
+
+ERROR_PROBLEM_TEXT = 'Someone tell @smokie_777 there is a problem with my AI.'
